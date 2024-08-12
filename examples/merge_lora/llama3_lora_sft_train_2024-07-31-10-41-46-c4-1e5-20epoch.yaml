@@ -1,0 +1,13 @@
+### Note: 注：请勿使用量化后的模型或 `quantization_bit` 参数来合并 LoRA 适配器。
+
+### model
+model_name_or_path: ./models/Llama3-8B-Chinese-Chat
+adapter_name_or_path: ./saves/LLaMA3-8B-Chinese-Chat/lora/train_2024-07-31-09-28-46-c4-1e5-20epoch
+template: llama3
+finetuning_type: lora
+
+### export
+export_dir: ./export_models/train_2024-07-31-09-28-46-c4-1e5-20epoch
+export_size: 4
+export_device: cuda
+export_legacy_format: false

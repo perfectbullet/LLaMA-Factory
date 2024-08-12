@@ -1,0 +1,12 @@
+nohup: ignoring input
+Traceback (most recent call last):
+  File "/data/llama_index_work/LLaMA-Factory/src/api.py", line 5, in <module>
+    from llamafactory.api.app import create_app
+  File "/data/llama_index_work/LLaMA-Factory/src/llamafactory/__init__.py", line 17, in <module>
+    from .cli import VERSION
+  File "/data/llama_index_work/LLaMA-Factory/src/llamafactory/cli.py", line 22, in <module>
+    from .api.app import run_api
+  File "/data/llama_index_work/LLaMA-Factory/src/llamafactory/api/app.py", line 193
+    elif request.model in ['GX-8B-Chinese-Chat-zhaobiao', ]
+                                                           ^
+SyntaxError: expected ':'

@@ -1,0 +1,2 @@
+model_name_or_path: ./models/Qwen-7B-Chat
+template: qwen

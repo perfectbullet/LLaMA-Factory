@@ -1,0 +1,51 @@
+services:
+  llamafactory_zj:
+    build:
+      # image: llamafactory_by_zj:v24.08.09
+      dockerfile: ./Dockerfile
+      context: .
+      args:
+        INSTALL_BNB: false
+        INSTALL_VLLM: false
+        INSTALL_DEEPSPEED: false
+        INSTALL_FLASHATTN: false
+        PIP_INDEX: https://pypi.tuna.tsinghua.edu.cn/simple
+    container_name: llamafactory
+    volumes:
+      # - ./hf_cache:/root/.cache/huggingface
+      # - ./ms_cache:/root/.cache/modelscope
+      # - ./data:/app/data
+      - ./*:/app/
+      # - ../../src:/app/src
+      # - ../../cache:/app/cache
+      # - ../../config:/app/config
+      # - ../../d2l-zh:/app/d2l-zh
+      # - ../../docker:/app/docker
+      # - ../../evaluation:/app/evaluation
+      # - ../../examples:/app/examples
+      # - ../../export_models:/app/export_models
+      # - ../../models:/app/models
+      # - ../../my_setup_demo:/app/my_setup_demo
+      # - ../../saves:/app/saves
+      # - ../../scripts:/app/scripts
+      # - ../../swagger_statics:/app/swagger_statics
+      # - ../../tests:/app/tests
+    ports:
+      - "7867:7860"
+      - "8002:8000"
+      - "8886:8889"
+      - "8010:8010"
+      - "8011:8011"
+    ipc: host
+    tty: true
+    stdin_open: true
+    # command: bash
+    command: jupyter -lab --ip=0.0.0.0 --port=8889 --allow-root --no-browser
+    deploy:
+      resources:
+        reservations:
+          devices:
+          - driver: nvidia
+            device_ids: ["1"]
+            capabilities: [gpu]
+    restart: unless-stopped

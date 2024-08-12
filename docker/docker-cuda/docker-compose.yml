@@ -1,0 +1,52 @@
+services:
+  llamafactory:
+    build:
+      dockerfile: ./docker/docker-cuda/Dockerfile
+      context: ../..
+      args:
+        INSTALL_BNB: false
+        INSTALL_VLLM: false
+        INSTALL_DEEPSPEED: false
+        INSTALL_FLASHATTN: false
+        PIP_INDEX: https://pypi.tuna.tsinghua.edu.cn/simple
+    container_name: llamafactory
+    volumes:
+      - ../../hf_cache:/root/.cache/huggingface
+      - ../../ms_cache:/root/.cache/modelscope
+      - ../../data:/app/data
+      - ../../*:/app/
+      # - ../../src:/app/src
+      # - ../../cache:/app/cache
+      # - ../../config:/app/config
+      # - ../../d2l-zh:/app/d2l-zh
+      # - ../../docker:/app/docker
+      # - ../../evaluation:/app/evaluation
+      # - ../../examples:/app/examples
+      # - ../../export_models:/app/export_models
+      # - ../../models:/app/models
+      # - ../../my_setup_demo:/app/my_setup_demo
+      # - ../../saves:/app/saves
+      # - ../../scripts:/app/scripts
+      # - ../../swagger_statics:/app/swagger_statics
+      # - ../../tests:/app/tests
+      # - ../../tests:/app/tests
+      # - ../../tests:/app/tests
+      # - ../../tests:/app/tests
+    ports:
+      - "7860:7860"
+      - "800:8000"
+      - "8000:8000"
+      - "8000:8000"
+      - "8000:8000"
+    ipc: host
+    tty: true
+    stdin_open: true
+    command: bash
+    deploy:
+      resources:
+        reservations:
+          devices:
+          - driver: nvidia
+            count: "all"
+            capabilities: [gpu]
+    restart: unless-stopped

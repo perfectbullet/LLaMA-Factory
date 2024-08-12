@@ -1,0 +1,75 @@
+07/24/2024 14:56:38 - INFO - llamafactory.webui.chatter - ==== load_model ====
+{<gradio.components.dropdown.Dropdown object at 0x7c4b32336410>: 'en', <gradio.components.dropdown.Dropdown object at 0x7c4b32337bb0>: 'LLaMA3-8B-Chinese-Chat', <gradio.components.textbox.Textbox object at 0x7c4b32337610>: './models/Llama3-8B-Chinese-Chat', <gradio.components.dropdown.Dropdown object at 0x7c4b311b2e90>: 'lora', <gradio.components.dropdown.Dropdown object at 0x7c4b311b2920>: ['train_alpaca_GJB5000B_20240722'], <gradio.components.dropdown.Dropdown object at 0x7c4b311b0c40>: 'none', <gradio.components.dropdown.Dropdown object at 0x7c4b311b3580>: 'bitsandbytes', <gradio.components.dropdown.Dropdown object at 0x7c4b311b2890>: 'llama3', <gradio.components.radio.Radio object at 0x7c4b311b19c0>: 'none', <gradio.components.radio.Radio object at 0x7c4b311b1090>: 'auto', <gradio.components.checkbox.Checkbox object at 0x7c4b311b1d20>: False, <gradio.components.dropdown.Dropdown object at 0x7c4b31215d20>: 'huggingface', <gradio.components.dropdown.Dropdown object at 0x7c4b31215ed0>: 'auto'}
+
+
+ChatModel init args is {'model_name_or_path': './models/Llama3-8B-Chinese-Chat', 'finetuning_type': 'lora', 'quantization_bit': None, 'quantization_method': 'bitsandbytes', 'template': 'llama3', 'flash_attn': 'auto', 'use_unsloth': False, 'visual_inputs': False, 'rope_scaling': None, 'infer_backend': 'huggingface', 'infer_dtype': 'auto', 'adapter_name_or_path': 'saves/LLaMA3-8B-Chinese-Chat/lora/train_alpaca_GJB5000B_20240722'}
+******************** 
+_parse_infer_args args is {'model_name_or_path': './models/Llama3-8B-Chinese-Chat', 'finetuning_type': 'lora', 'quantization_bit': None, 'quantization_method': 'bitsandbytes', 'template': 'llama3', 'flash_attn': 'auto', 'use_unsloth': False, 'visual_inputs': False, 'rope_scaling': None, 'infer_backend': 'huggingface', 'infer_dtype': 'auto', 'adapter_name_or_path': 'saves/LLaMA3-8B-Chinese-Chat/lora/train_alpaca_GJB5000B_20240722'} 
+********************
+07/24/2024 14:56:38 - INFO - llamafactory.hparams.parser - ******************** 
+ _parse_args args is {'model_name_or_path': './models/Llama3-8B-Chinese-Chat', 'finetuning_type': 'lora', 'quantization_bit': None, 'quantization_method': 'bitsandbytes', 'template': 'llama3', 'flash_attn': 'auto', 'use_unsloth': False, 'visual_inputs': False, 'rope_scaling': None, 'infer_backend': 'huggingface', 'infer_dtype': 'auto', 'adapter_name_or_path': 'saves/LLaMA3-8B-Chinese-Chat/lora/train_alpaca_GJB5000B_20240722'} 
+ ********************
+
+
+[INFO|tokenization_utils_base.py:2159] 2024-07-24 14:56:38,500 >> loading file tokenizer.json
+[INFO|tokenization_utils_base.py:2159] 2024-07-24 14:56:38,501 >> loading file added_tokens.json
+[INFO|tokenization_utils_base.py:2159] 2024-07-24 14:56:38,501 >> loading file special_tokens_map.json
+[INFO|tokenization_utils_base.py:2159] 2024-07-24 14:56:38,501 >> loading file tokenizer_config.json
+[WARNING|logging.py:313] 2024-07-24 14:56:38,959 >> Special tokens have been added in the vocabulary, make sure the associated word embeddings are fine-tuned or trained.
+07/24/2024 14:56:38 - INFO - llamafactory.data.template - Replace eos token: <|eot_id|>
+[INFO|configuration_utils.py:731] 2024-07-24 14:56:38,961 >> loading configuration file ./models/Llama3-8B-Chinese-Chat/config.json
+[INFO|configuration_utils.py:800] 2024-07-24 14:56:38,962 >> Model config LlamaConfig {
+  "_name_or_path": "./models/Llama3-8B-Chinese-Chat",
+  "architectures": [
+    "LlamaForCausalLM"
+  ],
+  "attention_bias": false,
+  "attention_dropout": 0.0,
+  "bos_token_id": 128000,
+  "eos_token_id": 128009,
+  "hidden_act": "silu",
+  "hidden_size": 4096,
+  "initializer_range": 0.02,
+  "intermediate_size": 14336,
+  "max_position_embeddings": 8192,
+  "mlp_bias": false,
+  "model_type": "llama",
+  "num_attention_heads": 32,
+  "num_hidden_layers": 32,
+  "num_key_value_heads": 8,
+  "pretraining_tp": 1,
+  "rms_norm_eps": 1e-05,
+  "rope_scaling": null,
+  "rope_theta": 500000.0,
+  "tie_word_embeddings": false,
+  "torch_dtype": "bfloat16",
+  "transformers_version": "4.42.3",
+  "use_cache": true,
+  "vocab_size": 128256
+}
+
+07/24/2024 14:56:38 - INFO - llamafactory.model.patcher - Using KV cache for faster generation.
+[INFO|modeling_utils.py:3553] 2024-07-24 14:56:38,963 >> loading weights file ./models/Llama3-8B-Chinese-Chat/model.safetensors.index.json
+[INFO|modeling_utils.py:1531] 2024-07-24 14:56:38,964 >> Instantiating LlamaForCausalLM model under default dtype torch.bfloat16.
+[INFO|configuration_utils.py:1000] 2024-07-24 14:56:38,965 >> Generate config GenerationConfig {
+  "bos_token_id": 128000,
+  "eos_token_id": 128009
+}
+
+Loading checkpoint shards: 100%|████████████████████████████████████████████████████████████████████| 4/4 [00:04<00:00,  1.15s/it]
+[INFO|modeling_utils.py:4364] 2024-07-24 14:56:43,891 >> All model checkpoint weights were used when initializing LlamaForCausalLM.
+
+[INFO|modeling_utils.py:4372] 2024-07-24 14:56:43,891 >> All the weights of LlamaForCausalLM were initialized from the model checkpoint at ./models/Llama3-8B-Chinese-Chat.
+If your task is similar to the task the model of the checkpoint was trained on, you can already use LlamaForCausalLM for predictions without further training.
+[INFO|configuration_utils.py:953] 2024-07-24 14:56:43,894 >> loading configuration file ./models/Llama3-8B-Chinese-Chat/generation_config.json
+[INFO|configuration_utils.py:1000] 2024-07-24 14:56:43,894 >> Generate config GenerationConfig {
+  "bos_token_id": 128000,
+  "eos_token_id": 128009,
+  "pad_token_id": 128009
+}
+
+07/24/2024 14:56:43 - INFO - llamafactory.model.model_utils.attention - Using torch SDPA for faster training and inference.
+07/24/2024 14:56:44 - INFO - llamafactory.model.adapter - Merged 1 adapter(s).
+07/24/2024 14:56:44 - INFO - llamafactory.model.adapter - Loaded adapter(s): saves/LLaMA3-8B-Chinese-Chat/lora/train_alpaca_GJB5000B_20240722
+07/24/2024 14:56:44 - INFO - llamafactory.model.loader - all params: 8,030,261,248
+07/24/2024 14:56:44 - WARNING - llamafactory.chat.hf_engine - There is no current event loop, creating a new one.

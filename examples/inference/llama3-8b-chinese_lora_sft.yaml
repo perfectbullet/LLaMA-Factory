@@ -1,0 +1,6 @@
+model_name_or_path: ./models/Llama3-8B-Chinese-Chat
+adapter_name_or_path: ./saves/LLaMA3-8B-Chinese-Chat/lora/train_alpaca_GJB5000B_20240719
+template: llama3
+infer_backend: vllm
+vllm_enforce_eager: true
+#finetuning_type: lora
