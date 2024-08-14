@@ -1,0 +1,4 @@
+model_name_or_path: ./models/Qwen-1_8B-Chat
+template: qwen
+infer_backend: vllm
+vllm_enforce_eager: true

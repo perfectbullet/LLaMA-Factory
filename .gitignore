@@ -172,3 +172,5 @@ d2l-zh
 export_models
 nohup.out
 
+/hf_cache/
+/ms_cache/
