@@ -9,14 +9,16 @@ from llamafactory.extras.logging import get_logger
 
 logger = get_logger(__name__)
 
+
 def main():
-    logger.info("********\n os.getcwd {}\n\n********".format(os.getcwd()))
-    
+    logger.info("\n\n********\n os.getcwd {}\n\n********".format(os.getcwd()))
+
     chat_model = ApiChatModel()
     app = create_app(chat_model)
     api_host = os.environ.get("API_HOST", "0.0.0.0")
-    api_port = int(os.environ.get("API_PORT", "8010"))
-    logger.info("Visit http://localhost:{}/docs for API document.".format(api_port))
+    api_port = os.environ.get("API_PORT", 8010)
+    logger.info("Visit  http://localhost:{}/docs for API document."
+                "\nVisit  http://localhost:{}/redoc for API document.".format(api_port, api_port))
     uvicorn.run(app, host=api_host, port=api_port)
 
 

@@ -2,14 +2,8 @@ import os
 import uuid
 from contextlib import asynccontextmanager
 from typing import Optional
-import time
-from typing_extensions import Annotated
 
-# from ..chat import ChatModel
-from ..extras.constants import SUPPORTED_MODELS, API_SUPPORTED_MODELS
-from ..extras.misc import torch_gc
-from ..extras.packages import is_fastapi_available, is_starlette_available, is_uvicorn_available
-from ..extras.logging import get_logger
+from typing_extensions import Annotated
 
 from .ApiChatModel import ApiChatModel
 from .chat import (
@@ -26,14 +20,18 @@ from .protocol import (
     ModelDesList,
     ModelList,
     ScoreEvaluationRequest,
-    ScoreEvaluationResponse, 
-    ChatCompletionResponseChoice, 
-    ChatCompletionMessage, 
-    Finish, 
+    ScoreEvaluationResponse,
+    ChatCompletionResponseChoice,
+    ChatCompletionMessage,
+    Finish,
     ChatCompletionResponseUsage,
     MODEL_STOPPED,
     MODEL_RUNNING,
 )
+from ..extras.constants import API_SUPPORTED_MODELS
+from ..extras.logging import get_logger
+from ..extras.misc import torch_gc
+from ..extras.packages import is_fastapi_available, is_starlette_available, is_uvicorn_available
 
 logger = get_logger(__name__)
 
@@ -263,5 +261,6 @@ def run_api() -> None:
     app = create_app(chat_model)
     api_host = os.environ.get("API_HOST", "0.0.0.0")
     api_port = int(os.environ.get("API_PORT", "8010"))
-    print("Visit 222222222222222222222222 http://localhost:{}/docs for API document.".format(api_port))
+    print("Visit  http://localhost:{}/docs for API document."
+          "\nVisit  http://localhost:{}/redoc for API document.".format(api_port, api_port))
     uvicorn.run(app, host=api_host, port=api_port)
