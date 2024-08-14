@@ -5,13 +5,12 @@ import uvicorn
 from llamafactory.api.app import create_app
 # from llamafactory.chat import ChatModel
 from llamafactory.api.ApiChatModel import ApiChatModel
-from llamafactory.extras.logging import get_logger
-
-logger = get_logger(__name__)
+# from llamafactory.extras.logging import get_logger
+from loguru import logger
 
 
 def main():
-    logger.info("\n\n********\n os.getcwd {}\n\n********".format(os.getcwd()))
+    logger.info("********\n os.getcwd {}\n\n********".format(os.getcwd()))
 
     chat_model = ApiChatModel()
     app = create_app(chat_model)

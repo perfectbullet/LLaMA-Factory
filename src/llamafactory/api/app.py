@@ -3,6 +3,10 @@ import uuid
 from contextlib import asynccontextmanager
 from typing import Optional
 
+import motor.motor_asyncio
+from bson import ObjectId
+from loguru import logger
+from pymongo import ReturnDocument
 from typing_extensions import Annotated
 
 from .ApiChatModel import ApiChatModel
@@ -28,20 +32,21 @@ from .protocol import (
     MODEL_STOPPED,
     MODEL_RUNNING,
 )
+from .mongodb_tools import llmbase_collection
+
+from .schemas import LLMBaseModel, LLMBaseCollection, UpdateLLMBaseModel
 from ..extras.constants import API_SUPPORTED_MODELS
-from ..extras.logging import get_logger
 from ..extras.misc import torch_gc
 from ..extras.packages import is_fastapi_available, is_starlette_available, is_uvicorn_available
 
-logger = get_logger(__name__)
-
 if is_fastapi_available():
-    from fastapi import Depends, FastAPI, HTTPException, status
+    from fastapi import Depends, FastAPI, HTTPException, status, Body
     from fastapi.middleware.cors import CORSMiddleware
     from fastapi.security.http import HTTPAuthorizationCredentials, HTTPBearer
     from fastapi.openapi.docs import get_swagger_ui_html, get_redoc_html
     from fastapi import FastAPI, applications
     from fastapi.staticfiles import StaticFiles
+    from fastapi.responses import Response
 
 if is_starlette_available():
     from sse_starlette import EventSourceResponse
@@ -105,6 +110,7 @@ def create_app(chat_model: ApiChatModel) -> FastAPI:
     # logger.info("============ API_SUPPORTED_MODELS ============ {} \n\n".format(API_SUPPORTED_MODELS))
     # API_SUPPORTED_MODELS['LLaMA3-8B-Chinese-Chat']['status'] = "running"
     logger.info("============ API_SUPPORTED_MODELS after change ============ {} \n\n".format(API_SUPPORTED_MODELS))
+
     async def verify_api_key(auth: Annotated[Optional[HTTPAuthorizationCredentials], Depends(security)]):
         if api_key and (auth is None or auth.credentials != api_key):
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid API key.")
@@ -119,7 +125,7 @@ def create_app(chat_model: ApiChatModel) -> FastAPI:
         a load model api
         """
         # 设置环境变量
-        os.environ['LANG']="zh_CN.UTF-8"
+        os.environ['LANG'] = "zh_CN.UTF-8"
         logger.info('load model, model card is {}'.format(request))
         model_args = API_SUPPORTED_MODELS[request.id]['model_args']
         logger.info('model_args is {}'.format(model_args))
@@ -143,22 +149,22 @@ def create_app(chat_model: ApiChatModel) -> FastAPI:
         """
         model_id = request.id
         # 设置环境变量
-        os.environ['LANG']="zh_CN.UTF-8"
+        os.environ['LANG'] = "zh_CN.UTF-8"
         for k, value in API_SUPPORTED_MODELS.items():
             value['status'] = MODEL_STOPPED
         logger.info('unload_model ModelCard is {}'.format(request))
         if chat_model.engine is None:
             return ModelCardDes(
-            id=request.id, 
-            status=MODEL_STOPPED, 
-            description=API_SUPPORTED_MODELS[request.id]['description']
+                id=request.id,
+                status=MODEL_STOPPED,
+                description=API_SUPPORTED_MODELS[request.id]['description']
             )
         logger.info('unload_from_api start')
         chat_model.unload_from_api()
         logger.info('unload_from_api finished')
         res_model = ModelCardDes(
-            id=request.id, 
-            status=MODEL_STOPPED, 
+            id=request.id,
+            status=MODEL_STOPPED,
             description=API_SUPPORTED_MODELS[request.id]['description']
         )
         return res_model
@@ -188,17 +194,17 @@ def create_app(chat_model: ApiChatModel) -> FastAPI:
         logger.info('request is %s', request)
         logger.info('LANG is %s', os.environ['LANG'])
         # 设置环境变量
-        os.environ['LANG']="zh_CN.UTF-8"
+        os.environ['LANG'] = "zh_CN.UTF-8"
         # 这里固定一下三个参数 export LANG="zh_CN";export LANGUAGE="zh_CN";export LC_ALL="zh_CN";
         if request.model in ['GX-7B-Chat-5000B', 'Qwen-7B']:
             request.temperature = 0.3
             request.top_p = 0.9
             request.max_tokens = 512
-        elif request.model in ['GX-8B-Chinese-Chat-zhaobiao',]:
+        elif request.model in ['GX-8B-Chinese-Chat-zhaobiao', ]:
             request.temperature = 0.6
             request.top_p = 0.7
             request.max_tokens = 1024
-        elif request.model in ['GX-8B-Chinese-Chat-gjb5000b',]:
+        elif request.model in ['GX-8B-Chinese-Chat-gjb5000b', ]:
             request.temperature = 0.5
             request.top_p = 0.8
             request.max_tokens = 512
@@ -252,6 +258,106 @@ def create_app(chat_model: ApiChatModel) -> FastAPI:
             raise HTTPException(status_code=status.HTTP_405_METHOD_NOT_ALLOWED, detail="Not allowed")
 
         return await create_score_evaluation_response(request, chat_model)
+
+    # ****************************** 基础语言模型相关接口 ******************************
+    @app.post(
+        "/v1/finetuning/base_models/",
+        response_description="基础语言模型",
+        response_model=LLMBaseModel,
+        status_code=status.HTTP_201_CREATED,
+        response_model_by_alias=True,
+        summary='新增基础模型配置'
+    )
+    async def create_llmbase(llmbase: LLMBaseModel = Body(...)):
+        """
+        插入新的 LLMBase 记录。
+        将创建一个唯一的“id”并在响应中提供。
+        """
+        logger.info('create_llmbase %s', create_llmbase)
+        new_llmbase = await llmbase_collection.insert_one(
+            llmbase.model_dump(by_alias=True, exclude=["id"])
+        )
+        created_llmbase = await llmbase_collection.find_one(
+            {"_id": new_llmbase.inserted_id}
+        )
+        return created_llmbase
+
+    @app.get(
+        "/v1/finetuning/base_models/",
+        response_description="基础模型信息列表",
+        response_model=LLMBaseCollection,
+        response_model_by_alias=False,
+        summary='获取所有基础模型信息的列表'
+    )
+    async def list_llmbase():
+        # 这个注释会被写道api文档中
+        # 函数名 list_LLMBases 也会以 list LLMBases 写到接口文档中
+        """
+        列出数据库中的所有 LLMBase 数据
+        响应未分页且仅限于 1000 个结果。
+        """
+        return LLMBaseCollection(LLMBases=await llmbase_collection.find().to_list(1000))
+
+    @app.get(
+        "/v1/finetuning/base_models/{id}",
+        response_description="单个 LLMBase",
+        response_model=LLMBaseModel,
+        response_model_by_alias=False,
+        summary='获取单个 LLMBase'
+    )
+    async def show_llmbase(model_id: str):
+        """
+        获取特定 LLMBase 的记录，按 id 查找。
+        """
+        if (
+                llmbase := await llmbase_collection.find_one({"_id": ObjectId(model_id)})
+        ) is not None:
+            return llmbase
+        raise HTTPException(status_code=404, detail=f"LLMBase {model_id} not found")
+
+    @app.put(
+        "/v1/finetuning/base_models/{id}",
+        response_description="修改一个 LLMBase",
+        response_model=LLMBaseModel,
+        response_model_by_alias=False,
+        summary='修改一个 LLMBase'
+    )
+    async def update_llmbase(model_id: str, llmbase: UpdateLLMBaseModel = Body(...)):
+        """
+        更新现有 LLMBase 记录的各个字段。 仅更新提供的字段。任何缺失或空字段都将被忽略。
+        """
+        llmbase = {
+            k: v for k, v in llmbase.model_dump(by_alias=True).items() if v is not None
+        }
+        if len(llmbase) >= 1:
+            update_result = await llmbase_collection.find_one_and_update(
+                {"_id": ObjectId(model_id)},
+                {"$set": llmbase},
+                return_document=ReturnDocument.AFTER,
+            )
+            if update_result is not None:
+                return update_result
+            else:
+                raise HTTPException(status_code=404, detail=f"LLMBase {model_id} not found")
+        # The update is empty, but we should still return the matching document:
+        if (existing_LLMBase := await llmbase_collection.find_one({"_id": model_id})) is not None:
+            return existing_LLMBase
+        raise HTTPException(status_code=404, detail=f"LLMBase {model_id} not found")
+
+    @app.delete(
+        "/v1/finetuning/base_models/{id}",
+        response_description="删除一条",
+        summary='删除一条 LLMBase'
+    )
+    async def delete_llmbase(model_id: str):
+        """
+        从数据库中删除一条 LLMBase 记录
+        """
+        delete_result = await llmbase_collection.delete_one({"_id": ObjectId(model_id)})
+
+        if delete_result.deleted_count == 1:
+            return Response(status_code=status.HTTP_204_NO_CONTENT)
+        raise HTTPException(status_code=404, detail=f"LLMBase {model_id} not found")
 
     return app
 
