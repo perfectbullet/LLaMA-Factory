@@ -21,16 +21,30 @@ dataset_info_collection: AsyncIOMotorCollection = db.get_collection("datasets_in
 
 async def init_mongodb():
     logger.info("init mongodb started")
-    re1 = await asyncio.run(await dataset_info_collection.create_index('dataset_name', unique=True))
-    re2 = await asyncio.run(await dataset_info_collection.create_index('file_name', unique=True))
-    logger.info('init mongodb re1 IS {}'.format(re1))
-    logger.info('init mongodb re2 IS {}'.format(re2))
-
+    listed_indexes = dataset_info_collection.list_indexes()
+    async for index in listed_indexes:
+        logger.info('index is {}'.format(index))
+    try:
+        re1 = await dataset_info_collection.create_index('dataset_name', unique=True)
+        logger.info('init mongodb re1 IS {}'.format(re1))
+    except Exception as e:
+        logger.error('dataset_info_collection.create_index error is {}'.format(e))
+    try:
+        re2 = await dataset_info_collection.create_index('file_name', unique=True)
+        logger.info('init mongodb re2 IS {}'.format(re2))
+    except Exception as e:
+        logger.error('dataset_info_collection.create_index error is {}'.format(e))
     logger.info("init mongodb finished")
 
 
-# 必须要在其他的线程中执行，不然回影响到fastapi 线程执行
-loop = asyncio.get_event_loop()
-asyncio.run_coroutine_threadsafe(init_mongodb(), loop)
+# # 必须要在其他的线程中执行，不然回影响到fastapi 线程执行
+# asyncio.run(init_mongodb())
+
+
+# loop = asyncio.new_event_loop()
+# # asyncio.run_coroutine_threadsafe(init_mongodb(), loop)
+# task = loop.create_task(init_mongodb())
+# # print(task)
+# loop.run_until_complete(task)
 
 logger.info('MONGODB LLMBase_collection IS {}'.format(llmbase_collection))

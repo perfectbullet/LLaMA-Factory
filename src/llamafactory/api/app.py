@@ -7,6 +7,7 @@ import motor.motor_asyncio
 from bson import ObjectId
 from loguru import logger
 from pymongo import ReturnDocument
+from pymongo.errors import DuplicateKeyError
 from typing_extensions import Annotated
 
 from .ApiChatModel import ApiChatModel
@@ -359,30 +360,7 @@ def create_app(chat_model: ApiChatModel) -> FastAPI:
             return Response(status_code=status.HTTP_204_NO_CONTENT)
         raise HTTPException(status_code=404, detail=f"LLMBase {model_id} not found")
 
-        # ****************************** 基础语言模型相关接口 ******************************
-        # @app.post(
-        #     "/v1/finetuning/base_models/",
-        #     response_description="基础语言模型",
-        #     response_model=LLMBaseModel,
-        #     status_code=status.HTTP_201_CREATED,
-        #     response_model_by_alias=True,
-        #     summary='新增基础模型配置'
-        # )
-        # async def create_llmbase(llmbase: LLMBaseModel = Body(...)):
-        #     """
-        #     插入新的 LLMBase 记录。
-        #     将创建一个唯一的“id”并在响应中提供。
-        #     """
-        #     logger.info('create_llmbase %s', create_llmbase)
-        #     new_llmbase = await llmbase_collection.insert_one(
-        #         llmbase.model_dump(by_alias=True, exclude=["id"])
-        #     )
-        #     created_llmbase = await llmbase_collection.find_one(
-        #         {"_id": new_llmbase.inserted_id}
-        #     )
-        #     return created_llmbase
-
-        # ****************************** 数据集相关接口 ******************************
+    # ****************************** 数据集相关接口 ******************************
     @app.post(
         '/v1/finetuning/create_dataset',
         # response_description 响应信息描述
@@ -401,13 +379,30 @@ def create_app(chat_model: ApiChatModel) -> FastAPI:
         dinfo = dataset_info.model_dump(exclude={'id', })
         logger.info('dinfo %s', dinfo)
 
-        new_dataset_info = await dataset_info_collection.insert_one(
-            dinfo
-        )
+        try:
+            new_dataset_info = await dataset_info_collection.insert_one(dinfo)
+        except DuplicateKeyError as e:
+            detail = "DuplicateKeyError, {}".format(e)
+            logger.error(detail)
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=detail)
+
         created_dinfo = await dataset_info_collection.find_one(
             {"_id": new_dataset_info.inserted_id}
         )
         return created_dinfo
+
+    @app.get(
+        '/v1/finetuning/get_datasets',
+        response_description='数据集信息列表',
+        response_model=DataSetInfoList,
+        summary='获取所有数据集信息列表'
+     )
+    async def get_datasets():
+        """
+        获取所有数据集信息列表
+        响应未分页且仅限于 1000 个结果
+        """
+        return DataSetInfoList(dataset_info_list=await dataset_info_collection.find().to_list(1000))
 
     return app
 
