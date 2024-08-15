@@ -1,8 +1,11 @@
-from typing import Optional, List
+from typing import Optional, List, Literal
+from enum import Enum, unique
 
 from bson import ObjectId
 from pydantic import ConfigDict, BaseModel, Field, EmailStr
+
 from pydantic.functional_validators import BeforeValidator
+
 from typing_extensions import Annotated
 
 '''
@@ -15,6 +18,42 @@ from typing_extensions import Annotated
 # It will be represented as a `str` on the model so that it can be serialized to JSON.
 PyObjectId = Annotated[str, BeforeValidator(str)]
 
+@unique
+class AllowedFormat(str, Enum):
+    ALPACA = 'alpaca'
+    C4 = 'c4'
+
+
+class DataSetInfo(BaseModel):
+    """
+    LLM模型微调数据集数据信息
+    """
+    # Field(...)   参考文档  https://fastapi.tiangolo.com/zh/tutorial/query-params-str-validations/#_6
+    # 使用省略号(...)声明必需参数
+    # 你可以声明一个参数可以接收None值，但它仍然是必需的。这将强制客户端发送一个值，即使该值是None。
+    # 如果你觉得使用 ... 不舒服，你也可以从 Pydantic 导入并使用 Required： 2.8版本废除了
+    # 请记住，在大多数情况下，当你需要某些东西时，可以简单地省略 default 参数，因此你通常不必使用 ... 或 Required 如： Field()
+    id: Optional[PyObjectId] = Field(alias='_id', default=None)
+    # title, description, 限定dataset_format取值 会在 http://localhost:8010/redoc 中展示出来
+    dataset_name: str = Field(title="数据集名称", description="数据集名称", max_length=300,)
+    # AllowedFormat 限定dataset_format取值， 还有一种写法是 dataset_format: Literal["alpaca", "c4"]
+    # dataset_format2: Literal["alpaca", "c4"] = Field(default=..., title="title数据集格式", description="description数据集格式")
+    dataset_format: AllowedFormat = Field(title="数据集格式", description="数据集格式,表示数据集如何构成,有那些字段")
+    dataset_description: str = Field(title="数据集描述", description="描述数据集来源，特点，适合什么样的微调方式")
+    file_name: str = Field(title="数据集文件名", description="数据集文件名")
+    model_config = ConfigDict(
+        json_schema_extra={
+            'example': {
+                'dataset_name': 'alpaca_zh_demo',
+                'dataset_format': 'alpaca',
+                'dataset_description': '一个中文的alpaca数据集示例',
+                'file_name': 'alpaca_zh_demo.json'
+            }
+        }
+    )
+
+class DataSetInfoList(BaseModel):
+    dataset_info_list: List[DataSetInfo]
 
 class LLMBaseModel(BaseModel):
     """
@@ -72,4 +111,4 @@ class LLMBaseCollection(BaseModel):
     This exists because providing a top-level array in a JSON response can be a [vulnerability](https://haacked.com/archive/2009/06/25/json-hijacking.aspx/)
     """
 
-    LLMBases: List[LLMBaseModel]
+    llm_bases_list: List[LLMBaseModel]

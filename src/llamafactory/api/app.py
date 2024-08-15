@@ -32,9 +32,9 @@ from .protocol import (
     MODEL_STOPPED,
     MODEL_RUNNING,
 )
-from .mongodb_tools import llmbase_collection
+from .mongodb_tools import llmbase_collection, dataset_info_collection
 
-from .schemas import LLMBaseModel, LLMBaseCollection, UpdateLLMBaseModel
+from .schemas import LLMBaseModel, LLMBaseCollection, UpdateLLMBaseModel, DataSetInfo, DataSetInfoList
 from ..extras.constants import API_SUPPORTED_MODELS
 from ..extras.misc import torch_gc
 from ..extras.packages import is_fastapi_available, is_starlette_available, is_uvicorn_available
@@ -296,10 +296,10 @@ def create_app(chat_model: ApiChatModel) -> FastAPI:
         列出数据库中的所有 LLMBase 数据
         响应未分页且仅限于 1000 个结果。
         """
-        return LLMBaseCollection(LLMBases=await llmbase_collection.find().to_list(1000))
+        return LLMBaseCollection(llm_bases_list=await llmbase_collection.find().to_list(1000))
 
     @app.get(
-        "/v1/finetuning/base_models/{id}",
+        "/v1/finetuning/base_models/{model_id}",
         response_description="单个 LLMBase",
         response_model=LLMBaseModel,
         response_model_by_alias=False,
@@ -316,7 +316,7 @@ def create_app(chat_model: ApiChatModel) -> FastAPI:
         raise HTTPException(status_code=404, detail=f"LLMBase {model_id} not found")
 
     @app.put(
-        "/v1/finetuning/base_models/{id}",
+        "/v1/finetuning/base_models/{model_id}",
         response_description="修改一个 LLMBase",
         response_model=LLMBaseModel,
         response_model_by_alias=False,
@@ -345,7 +345,7 @@ def create_app(chat_model: ApiChatModel) -> FastAPI:
         raise HTTPException(status_code=404, detail=f"LLMBase {model_id} not found")
 
     @app.delete(
-        "/v1/finetuning/base_models/{id}",
+        "/v1/finetuning/base_models/{model_id}",
         response_description="删除一条",
         summary='删除一条 LLMBase'
     )
@@ -358,6 +358,56 @@ def create_app(chat_model: ApiChatModel) -> FastAPI:
         if delete_result.deleted_count == 1:
             return Response(status_code=status.HTTP_204_NO_CONTENT)
         raise HTTPException(status_code=404, detail=f"LLMBase {model_id} not found")
+
+        # ****************************** 基础语言模型相关接口 ******************************
+        # @app.post(
+        #     "/v1/finetuning/base_models/",
+        #     response_description="基础语言模型",
+        #     response_model=LLMBaseModel,
+        #     status_code=status.HTTP_201_CREATED,
+        #     response_model_by_alias=True,
+        #     summary='新增基础模型配置'
+        # )
+        # async def create_llmbase(llmbase: LLMBaseModel = Body(...)):
+        #     """
+        #     插入新的 LLMBase 记录。
+        #     将创建一个唯一的“id”并在响应中提供。
+        #     """
+        #     logger.info('create_llmbase %s', create_llmbase)
+        #     new_llmbase = await llmbase_collection.insert_one(
+        #         llmbase.model_dump(by_alias=True, exclude=["id"])
+        #     )
+        #     created_llmbase = await llmbase_collection.find_one(
+        #         {"_id": new_llmbase.inserted_id}
+        #     )
+        #     return created_llmbase
+
+        # ****************************** 数据集相关接口 ******************************
+    @app.post(
+        '/v1/finetuning/create_dataset',
+        # response_description 响应信息描述
+        response_description='当前创建的一条数据集信息',
+        # 接口的概括
+        summary='增加一个数据集信息',
+        status_code=status.HTTP_201_CREATED,
+        # 接口返回的数据模式
+        response_model=DataSetInfo,
+    )
+    async def create_dataset(dataset_info: DataSetInfo):
+        """
+        模型微调数据集数据信息
+        """
+        logger.info('create dataset %s', dataset_info)
+        dinfo = dataset_info.model_dump(exclude={'id', })
+        logger.info('dinfo %s', dinfo)
+
+        new_dataset_info = await dataset_info_collection.insert_one(
+            dinfo
+        )
+        created_dinfo = await dataset_info_collection.find_one(
+            {"_id": new_dataset_info.inserted_id}
+        )
+        return created_dinfo
 
     return app
 
