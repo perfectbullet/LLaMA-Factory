@@ -382,7 +382,10 @@ class Runner:
                 finish_info = ALERTS["err_failed"][lang]
         else:
             if os.path.exists(os.path.join(output_path, "all_results.json")):
-                finish_info = get_eval_results(os.path.join(output_path, "all_results.json"))
+                t = os.path.join(output_path, "all_results.json")
+                finish_info = get_eval_results(
+                    t
+                )
             else:
                 finish_info = ALERTS["err_failed"][lang]
 

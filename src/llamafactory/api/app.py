@@ -491,10 +491,10 @@ def create_app(chat_model: ApiChatModel) -> FastAPI:
         获取数据集格式
         """
         collection = db.get_collection("dataset_format")
-        # t = DataSetInfoList(dataset_info_list=await dataset_info_collection.find().to_list(1000))
-        t = await collection.find().to_list(100)
-        dataset_format_list = DataSetFormatList(dataset_format_list=await collection.find().to_list(100))
+        res = await collection.find().to_list(100)
+        dataset_format_list = DataSetFormatList(dataset_format_list=res)
         return dataset_format_list
+
 
     return app
 

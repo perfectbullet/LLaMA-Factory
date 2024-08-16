@@ -14,7 +14,7 @@
 
 # Level: api, webui > chat, eval, train > data, model > hparams > extras
 
-from .cli import VERSION
+# from .cli import VERSION
 
-
+VERSION = "0.8.3.dev0"
 __version__ = VERSION

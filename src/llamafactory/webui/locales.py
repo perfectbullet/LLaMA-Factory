@@ -1086,7 +1086,7 @@ LOCALES = {
     },
     "start_btn": {
         "en": {
-            "value": "Start",
+            "value": "Start run run starter",
         },
         "ru": {
             "value": "Начать",
