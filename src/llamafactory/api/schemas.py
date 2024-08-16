@@ -26,7 +26,7 @@ class AllowedFormat(str, Enum):
 
 class DataSetInfo(BaseModel):
     """
-    LLM模型微调数据集数据信息
+    DataSetInfo LLM模型微调数据集数据信息
     """
     # Field(...)   参考文档  https://fastapi.tiangolo.com/zh/tutorial/query-params-str-validations/#_6
     # 使用省略号(...)声明必需参数
@@ -52,8 +52,34 @@ class DataSetInfo(BaseModel):
         }
     )
 
+
 class DataSetInfoList(BaseModel):
+    """
+    DataSetInfoList 是 DataSetInfo 的列表
+    """
     dataset_info_list: List[DataSetInfo]
+
+
+class UpdateDataSetInfo(BaseModel):
+    """
+    UpdateDataSetInfo 更新LLM模型微调数据集数据信息
+    id 在url中显示
+    """
+    dataset_name: str = Field(title="数据集名称", description="数据集名称", max_length=300,)
+    dataset_format: AllowedFormat = Field(title="数据集格式", description="数据集格式,表示数据集如何构成,有那些字段")
+    dataset_description: str = Field(title="数据集描述", description="描述数据集来源，特点，适合什么样的微调方式")
+    file_name: str = Field(title="数据集文件名", description="数据集文件名")
+    model_config = ConfigDict(
+        json_schema_extra={
+            'example': {
+                'dataset_name': 'alpaca_zh_demo',
+                'dataset_format': 'alpaca',
+                'dataset_description': '一个中文的alpaca数据集示例',
+                'file_name': 'alpaca_zh_demo.json'
+            }
+        }
+    )
+
 
 class LLMBaseModel(BaseModel):
     """

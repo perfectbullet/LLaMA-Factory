@@ -392,7 +392,7 @@ def create_app(chat_model: ApiChatModel) -> FastAPI:
         return created_dinfo
 
     @app.get(
-        '/v1/finetuning/get_datasets',
+        '/v1/finetuning/dataset_infos',
         response_description='数据集信息列表',
         response_model=DataSetInfoList,
         summary='获取所有数据集信息列表'
@@ -403,6 +403,35 @@ def create_app(chat_model: ApiChatModel) -> FastAPI:
         响应未分页且仅限于 1000 个结果
         """
         return DataSetInfoList(dataset_info_list=await dataset_info_collection.find().to_list(1000))
+
+    @app.put(
+        "/v1/finetuning/dataset_infos/{info_id}",
+        response_description="修改一个数据集信息",
+        response_model=DataSetInfo,
+        response_model_by_alias=False,
+        summary='修改一个数据集信息'
+    )
+    async def update_llmbase(info_id: str, dataset_info: DataSetInfo = Body(...)):
+        """
+        更新现有 LLMBase 记录的各个字段。 仅更新提供的字段。任何缺失或空字段都将被忽略。
+        """
+        dataset_info = {
+            k: v for k, v in dataset_info.model_dump(by_alias=True).items() if v is not None
+        }
+        if len(dataset_info) >= 1:
+            update_result = await dataset_info_collection.find_one_and_update(
+                {"_id": ObjectId(info_id)},
+                {"$set": dataset_info},
+                return_document=ReturnDocument.AFTER,
+            )
+            if update_result is not None:
+                return update_result
+            else:
+                raise HTTPException(status_code=404, detail=f"dataset_info {info_id} not found")
+        # The update is empty, but we should still return the matching document:
+        if (existing_student := await dataset_info_collection.find_one({"_id": info_id})) is not None:
+            return existing_student
+        raise HTTPException(status_code=404, detail=f"dataset_info {info_id} not found")
 
     return app
 
