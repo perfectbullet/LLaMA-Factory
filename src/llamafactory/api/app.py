@@ -33,9 +33,10 @@ from .protocol import (
     MODEL_STOPPED,
     MODEL_RUNNING,
 )
-from .mongodb_tools import llmbase_collection, dataset_info_collection
+from .mongodb_tools import llmbase_collection, dataset_info_collection, db, init_mongodb
 
-from .schemas import LLMBaseModel, LLMBaseCollection, UpdateLLMBaseModel, DataSetInfo, DataSetInfoList
+from .schemas import LLMBaseModel, LLMBaseCollection, UpdateLLMBaseModel, DataSetInfo, DataSetInfoList, \
+    DataSetFormatList, DataSetFormat
 from ..extras.constants import API_SUPPORTED_MODELS
 from ..extras.misc import torch_gc
 from ..extras.packages import is_fastapi_available, is_starlette_available, is_uvicorn_available
@@ -260,6 +261,24 @@ def create_app(chat_model: ApiChatModel) -> FastAPI:
 
         return await create_score_evaluation_response(request, chat_model)
 
+    # ****************************** mongodb初始化 ******************************
+    @app.put(
+        "/v1/super/init_mongodb/{token}",
+        response_model=str,
+        response_description="mongodb初始化",
+        summary='mongodb初始化'
+    )
+    async def init_mongodb_super(token: str):
+        """
+        mongodb初始化
+        """
+        logger.info('mongodb初始化 %s', token)
+        if token == '121531845':
+            await init_mongodb()
+            return 'ok'
+        else:
+            return 'token is not ok'
+
     # ****************************** 基础语言模型相关接口 ******************************
     @app.post(
         "/v1/finetuning/base_models/",
@@ -432,6 +451,50 @@ def create_app(chat_model: ApiChatModel) -> FastAPI:
         if (existing_student := await dataset_info_collection.find_one({"_id": info_id})) is not None:
             return existing_student
         raise HTTPException(status_code=404, detail=f"dataset_info {info_id} not found")
+
+    # ****************************** 数据集格式相关接口 ******************************
+    @app.post(
+        '/v1/finetuning/create_dataset_format',
+        response_description='当前创建的一条数据集格式信息',
+        summary='增加一个数据集格式信息',
+        status_code=status.HTTP_201_CREATED,
+        response_model=DataSetFormat,
+    )
+    async def create_dataset_format(dataset_format: DataSetFormat):
+        """
+        模型微调数据集数据信息
+        """
+        logger.info('create dataset_format %s', dataset_format)
+        finfo = dataset_format.model_dump(exclude={'id', })
+        logger.info('finfo %s', finfo)
+        collection = db.get_collection("dataset_format")
+        try:
+            new_format_info = await collection.insert_one(finfo)
+        except DuplicateKeyError as e:
+            detail = "DuplicateKeyError, {}".format(e)
+            logger.error(detail)
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=detail)
+
+        created_dinfo = await collection.find_one(
+            {"_id": new_format_info.inserted_id}
+        )
+        return created_dinfo
+
+    @app.get(
+        '/v1/finetuning/dataset_format',
+        response_description='数据集格式',
+        response_model=DataSetFormatList,
+        summary='获取数据集格式'
+     )
+    async def get_dataset_format():
+        """
+        获取数据集格式
+        """
+        collection = db.get_collection("dataset_format")
+        # t = DataSetInfoList(dataset_info_list=await dataset_info_collection.find().to_list(1000))
+        t = await collection.find().to_list(100)
+        dataset_format_list = DataSetFormatList(dataset_format_list=await collection.find().to_list(100))
+        return dataset_format_list
 
     return app
 

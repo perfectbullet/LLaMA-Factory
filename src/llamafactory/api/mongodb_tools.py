@@ -34,12 +34,16 @@ async def init_mongodb():
         logger.info('init mongodb re2 IS {}'.format(re2))
     except Exception as e:
         logger.error('dataset_info_collection.create_index error is {}'.format(e))
+    try:
+        collection = db.get_collection("dataset_format")
+        re3 = await collection.create_index('dataset_format', unique=True)
+        logger.info('init mongodb re3 IS {}'.format(re3))
+    except Exception as e:
+        logger.error('collection.create_index error is {}'.format(e))
     logger.info("init mongodb finished")
-
 
 # # 必须要在其他的线程中执行，不然回影响到fastapi 线程执行
 # asyncio.run(init_mongodb())
-
 
 # loop = asyncio.new_event_loop()
 # # asyncio.run_coroutine_threadsafe(init_mongodb(), loop)

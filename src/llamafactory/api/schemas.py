@@ -23,7 +23,6 @@ class AllowedFormat(str, Enum):
     ALPACA = 'alpaca'
     C4 = 'c4'
 
-
 class DataSetInfo(BaseModel):
     """
     DataSetInfo LLM模型微调数据集数据信息
@@ -58,6 +57,30 @@ class DataSetInfoList(BaseModel):
     DataSetInfoList 是 DataSetInfo 的列表
     """
     dataset_info_list: List[DataSetInfo]
+
+
+class DataSetFormat(BaseModel):
+    """
+    DataSetFormat 数据集格式
+    """
+    id: Optional[PyObjectId] = Field(alias='_id', default=None)
+    dataset_format: str = Field(title="数据集格式名称", description="数据集格式名称", max_length=30,)
+    dataset_description: str = Field(title="数据集描述", description="数据集格式描述")
+    model_config = ConfigDict(
+        json_schema_extra={
+            'example': {
+                'dataset_format': 'alpaca',
+                'dataset_description': 'alpaca格式数据集是一种指令微调数据集',
+            }
+        }
+    )
+
+
+class DataSetFormatList(BaseModel):
+    """
+    DataSetFormatList 是 格式 的列表
+    """
+    dataset_format_list: List[DataSetFormat]
 
 
 class UpdateDataSetInfo(BaseModel):
