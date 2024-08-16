@@ -302,6 +302,7 @@ class Runner:
             gr.Warning(error)
             yield {output_box: error}
         else:
+            #
             self.do_train, self.running_data = do_train, data
             args = self._parse_train_args(data) if do_train else self._parse_eval_args(data)
 
@@ -313,8 +314,8 @@ class Runner:
             env["LLAMABOARD_WORKDIR"] = args["output_dir"]
             if args.get("deepspeed", None) is not None:
                 env["FORCE_TORCHRUN"] = "1"
-
-            self.trainer = Popen("llamafactory-cli train {}".format(save_cmd(args)), env=env, shell=True)
+            train_cmd = "llamafactory-cli train {}".format(save_cmd(args))
+            self.trainer = Popen(train_cmd, env=env, shell=True)
             yield from self.monitor()
 
     def _form_config_dict(self, data: Dict["Component", Any]) -> Dict[str, Any]:
