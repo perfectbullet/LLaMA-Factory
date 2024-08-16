@@ -165,8 +165,8 @@ config/
 saves/
 output/
 wandb/
-./data
-./models
+/data/
+/models/
 
 d2l-zh
 export_models
