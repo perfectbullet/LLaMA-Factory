@@ -1,17 +1,3 @@
-# Copyright 2024 the LlamaFactory team.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
 import json
 import os
 import signal
@@ -28,7 +14,6 @@ from ..extras.ploting import gen_loss_plot
 from ..model import QuantizationMethod
 from .common import DEFAULT_CACHE_DIR, DEFAULT_CONFIG_DIR, get_save_dir
 from .locales import ALERTS
-
 
 if is_gradio_available():
     import gradio as gr
@@ -131,7 +116,7 @@ def save_cmd(args: Dict[str, Any]) -> str:
     return os.path.join(output_dir, TRAINING_ARGS)
 
 
-def get_eval_results(path: os.PathLike) -> str:
+def get_eval_results(path: os.PathLike | str) -> str:
     r"""
     Gets scores after evaluation.
     """
@@ -146,6 +131,45 @@ def get_time() -> str:
     """
     return datetime.now().strftime(r"%Y-%m-%d-%H-%M-%S")
 
+
+def get_trainer_info_api(output_path: os.PathLike, do_train: bool) -> Tuple[str, Any, Any]:
+    """
+    api 获取训练信息的方法
+    """
+    running_log = ""
+    running_progress = None
+    running_loss = None
+
+    running_log_path = os.path.join(output_path, RUNNING_LOG)
+    if os.path.isfile(running_log_path):
+        with open(running_log_path, "r", encoding="utf-8") as f:
+            running_log = f.read()
+
+    trainer_log_path = os.path.join(output_path, TRAINER_LOG)
+    if os.path.isfile(trainer_log_path):
+        trainer_log: List[Dict[str, Any]] = []
+        with open(trainer_log_path, "r", encoding="utf-8") as f:
+            for line in f:
+                trainer_log.append(json.loads(line))
+
+        if len(trainer_log) != 0:
+            latest_log = trainer_log[-1]
+            percentage = latest_log["percentage"]
+            label = "Running {:d}/{:d}: {} < {}".format(
+                latest_log["current_steps"],
+                latest_log["total_steps"],
+                latest_log["elapsed_time"],
+                latest_log["remaining_time"],
+            )
+            running_progress = {
+                'label': label,
+                'percentage': percentage
+            }
+            if do_train and is_matplotlib_available():
+                fig = gen_loss_plot(trainer_log)
+                running_loss = fig
+
+    return running_log, running_progress, running_loss
 
 def get_trainer_info(output_path: os.PathLike, do_train: bool) -> Tuple[str, "gr.Slider", Optional["gr.Plot"]]:
     r"""
