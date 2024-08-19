@@ -174,3 +174,9 @@ nohup.out
 
 /hf_cache/
 /ms_cache/
+/data/chat-dataset-baseline/data/.ipynb_checkpoints/
+/data/chat-dataset-baseline/.ipynb_checkpoints/
+/data/chat-dataset-baseline/data/.ipynb_checkpoints/
+/data/chat-dataset-baseline/history/.ipynb_checkpoints/
+/data/chat-dataset-baseline/history/翻译后的中文数据/.ipynb_checkpoints/
+/data/chat-dataset-baseline/.ipynb_checkpoints/
