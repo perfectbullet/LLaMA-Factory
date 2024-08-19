@@ -179,7 +179,8 @@ def get_trainer_info(output_path: os.PathLike, do_train: bool) -> Tuple[str, "gr
             running_progress = gr.Slider(label=label, value=percentage, visible=True)
 
             if do_train and is_matplotlib_available():
-                running_loss = gr.Plot(gen_loss_plot(trainer_log))
+                fig = gen_loss_plot(trainer_log)
+                running_loss = gr.Plot(fig)
 
     return running_log, running_progress, running_loss
 

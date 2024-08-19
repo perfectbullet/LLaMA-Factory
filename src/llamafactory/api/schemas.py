@@ -23,6 +23,63 @@ class AllowedFormat(str, Enum):
     ALPACA = 'alpaca'
     C4 = 'c4'
 
+
+class FinetuningArgs(BaseModel):
+    """
+    FinetuningArgs LLM模型微调参数
+    """
+    id: Optional[PyObjectId] = Field(alias='_id', default=None)
+    stage: str = Field(default='sft', title="训练阶段", description="训练阶段", max_length=30)
+    do_train: bool = Field(default=True, title="是否微调", description="是否微调")
+    model_name_or_path: str = Field(
+        default='./models/Llama3-8B-Chinese-Chat',
+        title="预训练模型标识符",
+        description="预训练模型标识符或路径",
+        max_length=300
+    )
+    finetuning_type: str = Field(default='lora', title="微调方法", description="微调方法", max_length=30)
+    dataset: str = Field(..., title="选择的数据集", description="选择的数据集", max_length=100)
+    # gt	对于数值 ( int, float, )，向 JSON SchemaDecimal添加“大于”的验证和注释exclusiveMinimum
+    # lt	对于数值，这会为exclusiveMaximumJSON Schema添加“小于”的验证和注释
+    learning_rate: float = Field(default=1e-05, title="learning rate", description="learning rate", gt=5e-07, lt=1e-02)
+    num_train_epochs: float = Field(default=3.0, title="训练轮数", description="训练轮数", gt=2.0, lt=100.0)
+    max_samples: int = Field(default=1000, title="每个数据集的最大样本数", description="每个数据集的最大样本数 ", gt=100, lt=1000000)
+    output_dir: str = Field(
+        default='',
+        title="保存结果的目录",
+        description="保存结果的目录",
+        max_length=100
+    )
+    adapter_name_or_path: str = Field(
+        default='',
+        title="之前训练检查点",
+        description="之前训练检查点",
+        max_length=100
+    )
+    model_config = ConfigDict(
+        json_schema_extra={
+            'example': {
+                'stage': 'sft',
+                'do_train': True,
+                'model_name_or_path': './models/Llama3-8B-Chinese-Chat',
+                'finetuning_type': 'lora',
+                'dataset': 'identity',
+                'learning_rate': 1e-05,
+                'num_train_epochs': 3,
+                'max_samples': 1000,
+                'output_dir': '',
+            }
+        }
+    )
+
+
+class FinetuningArgsList(BaseModel):
+    """
+    FinetuningArgsList 是 DataSetInfo 的列表
+    """
+    fine_tuning_args_list: List[FinetuningArgs]
+
+
 class DataSetInfo(BaseModel):
     """
     DataSetInfo LLM模型微调数据集数据信息

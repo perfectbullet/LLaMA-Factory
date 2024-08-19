@@ -74,7 +74,6 @@ def main():
     elif command == Command.EXPORT:
         export_model()
     elif command == Command.TRAIN:
-        
         force_torchrun = os.environ.get("FORCE_TORCHRUN", "0").lower() in ["true", "1"]
         print('force_torchrun force_torchrun {}'.format(force_torchrun))
         if force_torchrun or get_device_count() > 1:

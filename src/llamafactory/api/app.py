@@ -3,8 +3,8 @@ import uuid
 from contextlib import asynccontextmanager
 from typing import Optional
 
-import motor.motor_asyncio
 from bson import ObjectId
+from bson.errors import InvalidId
 from loguru import logger
 from pymongo import ReturnDocument
 from pymongo.errors import DuplicateKeyError
@@ -36,7 +36,7 @@ from .protocol import (
 from .mongodb_tools import llmbase_collection, dataset_info_collection, db, init_mongodb
 
 from .schemas import LLMBaseModel, LLMBaseCollection, UpdateLLMBaseModel, DataSetInfo, DataSetInfoList, \
-    DataSetFormatList, DataSetFormat
+    DataSetFormatList, DataSetFormat, FinetuningArgs, FinetuningArgsList
 from ..extras.constants import API_SUPPORTED_MODELS
 from ..extras.misc import torch_gc
 from ..extras.packages import is_fastapi_available, is_starlette_available, is_uvicorn_available
@@ -495,6 +495,77 @@ def create_app(chat_model: ApiChatModel) -> FastAPI:
         dataset_format_list = DataSetFormatList(dataset_format_list=res)
         return dataset_format_list
 
+    # ****************************** 微调相关接口 ******************************
+    @app.post(
+        '/v1/finetuning/run_finetuning',
+        response_description='微调状态返回',
+        response_model=FinetuningArgs,
+        status_code=status.HTTP_201_CREATED,
+        summary='模型微调接口',
+    )
+    async def run_finetuning(fine_tuning_args: FinetuningArgs):
+        # logger.info('fine_tuning_args %s', fine_tuning_args)
+        fargs = fine_tuning_args.model_dump(exclude={'id', })
+        logger.info('fargs %s', fargs)
+        collection = db.get_collection("fine_tuning_args")
+        try:
+            new_fargs = await collection.insert_one(fargs)
+        except DuplicateKeyError as e:
+            detail = "DuplicateKeyError, {}".format(e)
+            logger.error(detail)
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=detail)
+        created_fargs = await collection.find_one(
+            {"_id": new_fargs.inserted_id}
+        )
+        return created_fargs
+
+    @app.get(
+        '/v1/finetuning/get_finetuning_args',
+        response_description='微调参数列表',
+        response_model=FinetuningArgsList,
+        summary='微调参数列表'
+    )
+    async def list_finetuning_args():
+        """
+        获取数据集格式
+        """
+        collection = db.get_collection("fine_tuning_args")
+        res = await collection.find().to_list(100)
+        fine_tuning_args_list = FinetuningArgsList(fine_tuning_args_list=res)
+        return fine_tuning_args_list
+
+    @app.get(
+        "/v1/finetuning/get_finetuning_args/{args_id}",
+        response_description="单个 微调参数",
+        response_model=FinetuningArgs,
+        summary='获取单个 微调参数'
+    )
+    async def show_finetuning_args(args_id: str):
+        """
+        获取特定 微调参数 的记录，按 id 查找。
+        """
+        collection = db.get_collection("fine_tuning_args")
+        if (
+            finetuning_args := await collection.find_one({"_id": ObjectId(args_id)})
+        ) is not None:
+            return finetuning_args
+        raise HTTPException(status_code=404, detail=f"finetuning_args {args_id} not found")
+
+    @app.delete("/v1/finetuning/finetuning_args/{args_id}", response_description="清理一个 微调参数")
+    async def delete_finetuning_args(args_id: str):
+        """
+        清理一个 微调参数
+        """
+        collection = db.get_collection("fine_tuning_args")
+        try:
+            delete_result = await collection.delete_one({"_id": ObjectId(args_id)})
+        except Exception as e:
+            detail = "InvalidId, {}".format(e)
+            logger.error(detail)
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=detail)
+        if delete_result.deleted_count == 1:
+            return Response(status_code=status.HTTP_204_NO_CONTENT)
+        raise HTTPException(status_code=404, detail=f"finetuning_args {args_id} 没有找到这个")
 
     return app
 
