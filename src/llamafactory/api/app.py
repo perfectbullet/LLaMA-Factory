@@ -10,8 +10,8 @@ from pymongo import ReturnDocument
 from pymongo.errors import DuplicateKeyError
 from typing_extensions import Annotated
 
-from .ApiChatModel import ApiChatModel
-from .apirunner import ApiRunner
+from .engine import ApiEngine
+
 from .chat import (
     create_chat_completion_response,
     create_score_evaluation_response,
@@ -64,7 +64,7 @@ async def lifespan(app: "FastAPI"):  # collects GPU memory
     torch_gc()
 
 
-def create_app(chat_model: ApiChatModel, apirunner: ApiRunner) -> FastAPI:
+def create_app(engine: ApiEngine) -> FastAPI:
     def swagger_ui_patch(*args, **kwargs):
         return get_swagger_ui_html(
             *args, **kwargs,
@@ -80,6 +80,11 @@ def create_app(chat_model: ApiChatModel, apirunner: ApiRunner) -> FastAPI:
             redoc_js_url='/statics/swagger-ui/redoc.standalone.js',
             redoc_favicon_url='/statics/swagger-ui/favicon.png',
         )
+
+    # api 训练器
+    api_runner = engine.runner
+    # 聊天模型
+    chat_model = engine.chat_model
 
     applications.get_swagger_ui_html = swagger_ui_patch
     applications.get_redoc_html = redoc_ui_path
@@ -509,7 +514,7 @@ def create_app(chat_model: ApiChatModel, apirunner: ApiRunner) -> FastAPI:
         fargs = fine_tuning_args.model_dump(exclude={'id', })
         logger.info('fargs %s', fargs)
         collection = db.get_collection("fine_tuning_args")
-        apirunner.run_train(fargs)
+        api_runner.run_train(fargs)
         try:
             new_fargs = await collection.insert_one(fargs)
         except DuplicateKeyError as e:
@@ -573,10 +578,11 @@ def create_app(chat_model: ApiChatModel, apirunner: ApiRunner) -> FastAPI:
 
 
 def run_api() -> None:
-    chat_model = ApiChatModel()
-    app = create_app(chat_model)
+    logger.info("********\n os.getcwd {}\n\n********".format(os.getcwd()))
+    engine = ApiEngine()
+    app = create_app(engine)
     api_host = os.environ.get("API_HOST", "0.0.0.0")
-    api_port = int(os.environ.get("API_PORT", "8010"))
-    print("Visit  http://localhost:{}/docs for API document."
-          "\nVisit  http://localhost:{}/redoc for API document.".format(api_port, api_port))
+    api_port = os.environ.get("API_PORT", 8010)
+    logger.info("Visit  http://localhost:{}/docs for API document."
+                "\nVisit  http://localhost:{}/redoc for API document.".format(api_port, api_port))
     uvicorn.run(app, host=api_host, port=api_port)

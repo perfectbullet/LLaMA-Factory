@@ -69,7 +69,8 @@ class FinetuningArgs(BaseModel):
                 'max_samples': 1000,
                 'output_dir': '',
             }
-        }
+        },
+        protected_namespaces=()
     )
 
 
