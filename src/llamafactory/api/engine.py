@@ -8,4 +8,3 @@ class ApiEngine:
         self.runner = ApiRunner(demo_mode)
         if not demo_mode:
             create_ds_config()
-

@@ -4,13 +4,14 @@ from contextlib import asynccontextmanager
 from typing import Optional
 
 from bson import ObjectId
-from bson.errors import InvalidId
+
 from loguru import logger
 from pymongo import ReturnDocument
 from pymongo.errors import DuplicateKeyError
 from typing_extensions import Annotated
 
 from .ApiChatModel import ApiChatModel
+from .apirunner import ApiRunner
 from .chat import (
     create_chat_completion_response,
     create_score_evaluation_response,
@@ -63,7 +64,7 @@ async def lifespan(app: "FastAPI"):  # collects GPU memory
     torch_gc()
 
 
-def create_app(chat_model: ApiChatModel) -> FastAPI:
+def create_app(chat_model: ApiChatModel, apirunner: ApiRunner) -> FastAPI:
     def swagger_ui_patch(*args, **kwargs):
         return get_swagger_ui_html(
             *args, **kwargs,
@@ -508,6 +509,7 @@ def create_app(chat_model: ApiChatModel) -> FastAPI:
         fargs = fine_tuning_args.model_dump(exclude={'id', })
         logger.info('fargs %s', fargs)
         collection = db.get_collection("fine_tuning_args")
+        apirunner.run_train(fargs)
         try:
             new_fargs = await collection.insert_one(fargs)
         except DuplicateKeyError as e:
