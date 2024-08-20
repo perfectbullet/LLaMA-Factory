@@ -4,19 +4,18 @@ from contextlib import asynccontextmanager
 from typing import Optional
 
 from bson import ObjectId
-
 from loguru import logger
 from pymongo import ReturnDocument
 from pymongo.errors import DuplicateKeyError
 from typing_extensions import Annotated
-
-from .engine import ApiEngine
 
 from .chat import (
     create_chat_completion_response,
     create_score_evaluation_response,
     create_stream_chat_completion_response,
 )
+from .engine import ApiEngine
+from .mongodb_tools import llmbase_collection, dataset_info_collection, db, init_mongodb
 from .protocol import (
     Role,
     ChatCompletionRequest,
@@ -34,8 +33,6 @@ from .protocol import (
     MODEL_STOPPED,
     MODEL_RUNNING,
 )
-from .mongodb_tools import llmbase_collection, dataset_info_collection, db, init_mongodb
-
 from .schemas import LLMBaseModel, LLMBaseCollection, UpdateLLMBaseModel, DataSetInfo, DataSetInfoList, \
     DataSetFormatList, DataSetFormat, FinetuningArgs, FinetuningArgsList, FinetuningLog
 from ..extras.constants import API_SUPPORTED_MODELS
@@ -421,7 +418,7 @@ def create_app(engine: ApiEngine) -> FastAPI:
         response_description='数据集信息列表',
         response_model=DataSetInfoList,
         summary='获取所有数据集信息列表'
-     )
+    )
     async def get_datasets():
         """
         获取所有数据集信息列表
@@ -491,7 +488,7 @@ def create_app(engine: ApiEngine) -> FastAPI:
         response_description='数据集格式',
         response_model=DataSetFormatList,
         summary='获取数据集格式'
-     )
+    )
     async def get_dataset_format():
         """
         获取数据集格式
@@ -524,12 +521,28 @@ def create_app(engine: ApiEngine) -> FastAPI:
         created_fargs = await collection.find_one(
             {"_id": new_fargs.inserted_id}
         )
+        #
         request_generator = api_runner.run_train(created_fargs)
-        # for elm in request_generator:
-        #     print('elm is {}'.format(elm))
-        # return EventSourceResponse(['ok{}'.format(i) for i in range(20)], media_type="text/event-stream")
         return EventSourceResponse(request_generator, media_type="text/event-stream")
-        # return created_fargs
+
+    @app.post(
+        '/v1/finetuning/abort_finetuning',
+        response_description='中断微调训练',
+        status_code=status.HTTP_202_ACCEPTED,
+        summary='中断微调训练',
+    )
+    async def abort_finetuning():
+        """
+        中断微调训练
+        """
+        # 找到一个微调的，
+        collection = db.get_collection("fine_tuning_args")
+        if (
+            finetuning_args := await collection.find_one()
+        ) is not None:
+            engine.runner.set_abort()
+            return finetuning_args
+        raise HTTPException(status_code=404, detail=f"finetuning_args not found")
 
     @app.get(
         '/v1/finetuning/get_finetuning_args',
@@ -558,12 +571,17 @@ def create_app(engine: ApiEngine) -> FastAPI:
         """
         collection = db.get_collection("fine_tuning_args")
         if (
-            finetuning_args := await collection.find_one({"_id": ObjectId(args_id)})
+                finetuning_args := await collection.find_one({"_id": ObjectId(args_id)})
         ) is not None:
             return finetuning_args
         raise HTTPException(status_code=404, detail=f"finetuning_args {args_id} not found")
 
-    @app.delete("/v1/finetuning/finetuning_args/{args_id}", response_description="清理一个 微调参数")
+    @app.delete(
+        "/v1/finetuning/finetuning_args/{args_id}",
+        response_description="清理一个 微调参数",
+        description='清理一个 微调参数',
+        summary='清理一个 微调参数'
+    )
     async def delete_finetuning_args(args_id: str):
         """
         清理一个 微调参数

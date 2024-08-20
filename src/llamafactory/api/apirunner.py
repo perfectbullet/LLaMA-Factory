@@ -2,18 +2,15 @@ import json
 import os
 from copy import deepcopy
 from subprocess import Popen, TimeoutExpired
-from typing import TYPE_CHECKING, Any, Dict, Generator, Optional
+from typing import Any, Dict, Generator, Optional
 
 from transformers.trainer import TRAINING_ARGS_NAME
 
-from .common import jsonify
-from ..extras.constants import LLAMABOARD_CONFIG, PEFT_METHODS, TRAINING_STAGES
-from ..extras.misc import is_gpu_or_npu_available, torch_gc
-
+from ..extras.constants import LLAMABOARD_CONFIG, PEFT_METHODS
+from ..extras.misc import torch_gc
 from ..webui.common import DEFAULT_CACHE_DIR, DEFAULT_CONFIG_DIR, QUANTIZATION_BITS, get_save_dir, load_config
 from ..webui.locales import ALERTS, LOCALES
-from ..webui.utils import abort_process, gen_cmd, get_eval_results, get_trainer_info, load_args, save_args, save_cmd, \
-    get_trainer_info_api
+from ..webui.utils import abort_process, gen_cmd, get_eval_results, load_args, save_args, save_cmd, get_trainer_info_api
 
 
 class ApiRunner:
@@ -267,13 +264,15 @@ class ApiRunner:
             args = self._parse_train_args(data) if do_train else self._parse_eval_args(data)
             yield {output_box: gen_cmd(args)}
 
-    def _launch(self, data: Dict[str, Any], do_train: bool) -> Generator[Dict[str, Any], None, None]:
+    def _launch(self, data: Dict[str, Any], do_train: bool) -> Generator[str]:
 
         error = self._initialize(data, do_train, from_preview=False)
         if error:
-            yield {'output_box': error}
+            yield json.dumps(
+                {'output_box': error},
+                ensure_ascii=False
+            )
         else:
-            #
             self.do_train, self.running_data = do_train, data
             args = self._parse_train_args(data) if do_train else self._parse_eval_args(data)
 
@@ -282,14 +281,12 @@ class ApiRunner:
                 os.path.join(args["output_dir"], LLAMABOARD_CONFIG),
                 self._form_config_dict(data)
             )
-
             env = deepcopy(os.environ)
             env["LLAMABOARD_ENABLED"] = "1"
             env["LLAMABOARD_WORKDIR"] = args["output_dir"]
             if args.get("deepspeed", None) is not None:
                 env["FORCE_TORCHRUN"] = "1"
             train_cmd = "llamafactory-cli train {}".format(save_cmd(args))
-
             self.trainer = Popen(train_cmd, env=env, shell=True)
             yield from self.monitor()
 
@@ -323,9 +320,6 @@ class ApiRunner:
         output_dir = self.running_data.get("output_dir")
         output_path = get_save_dir(model_name, finetuning_type, output_dir)
         # 没有gradio如何使用呢？
-        # output_box = self.manager.get_elem_by_id("{}.output_box".format("train" if self.do_train else "eval"))
-        # progress_bar = self.manager.get_elem_by_id("{}.progress_bar".format("train" if self.do_train else "eval"))
-        # loss_viewer = self.manager.get_elem_by_id("train.loss_viewer") if self.do_train else None
         while self.trainer is not None:
             if self.aborted:
                 return_dict = {
