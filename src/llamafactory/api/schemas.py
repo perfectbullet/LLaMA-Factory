@@ -1,4 +1,4 @@
-from typing import Optional, List, Literal
+from typing import Optional, List, Literal, Dict
 from enum import Enum, unique
 
 from bson import ObjectId
@@ -24,6 +24,15 @@ class AllowedFormat(str, Enum):
     C4 = 'c4'
 
 
+class FinetuningLog(BaseModel):
+    """
+    微调接流输出模型
+    """
+    output_box: str | None
+    progress_bar: Dict[str, str] | None
+    running_loss: str | None
+
+
 class FinetuningArgs(BaseModel):
     """
     FinetuningArgs LLM模型微调参数
@@ -31,23 +40,35 @@ class FinetuningArgs(BaseModel):
     id: Optional[PyObjectId] = Field(alias='_id', default=None)
     stage: str = Field(default='sft', title="训练阶段", description="训练阶段", max_length=30)
     do_train: bool = Field(default=True, title="是否微调", description="是否微调")
-    model_name_or_path: str = Field(
-        default='./models/Llama3-8B-Chinese-Chat',
+    model_path: str = Field(
+        default=None,
+        title="预训练模型路径",
+        description="预训练模型路径",
+        max_length=300
+    )
+    checkpoint_path: str = Field(
+        default='',
+        title="checkpoint_path",
+        description="checkpoint_path",
+    )
+    model_name: str = Field(
+        default=...,
         title="预训练模型标识符",
-        description="预训练模型标识符或路径",
+        description="预训练模型标识符",
         max_length=300
     )
     finetuning_type: str = Field(default='lora', title="微调方法", description="微调方法", max_length=30)
-    dataset: str = Field(..., title="选择的数据集", description="选择的数据集", max_length=100)
+    dataset: List[str] = Field(..., title="选择的数据集", description="选择的数据集", max_length=100)
     # gt	对于数值 ( int, float, )，向 JSON SchemaDecimal添加“大于”的验证和注释exclusiveMinimum
     # lt	对于数值，这会为exclusiveMaximumJSON Schema添加“小于”的验证和注释
-    learning_rate: float = Field(default=1e-05, title="learning rate", description="learning rate", gt=5e-07, lt=1e-02)
+    learning_rate: float = Field(default=1e-05, title="learning rate", description="学习率", gt=5e-07, lt=1e-02)
+    val_size: float = Field(default=0, title="验证集比例", description="验证集比例", ge=0, lt=0.5)
     num_train_epochs: float = Field(default=3.0, title="训练轮数", description="训练轮数", gt=2.0, lt=100.0)
     max_samples: int = Field(default=1000, title="每个数据集的最大样本数", description="每个数据集的最大样本数 ", gt=100, lt=1000000)
     output_dir: str = Field(
-        default='',
+        default=...,
         title="保存结果的目录",
-        description="保存结果的目录",
+        description="保存结果的目录,必填参数",
         max_length=100
     )
     adapter_name_or_path: str = Field(
@@ -56,18 +77,140 @@ class FinetuningArgs(BaseModel):
         description="之前训练检查点",
         max_length=100
     )
+    lang: Literal["zh", "en"] = Field(
+        default='zh',
+        title="语言",
+        description="语言",
+        max_length=10
+    )
+    preprocessing_num_workers: int = Field(
+        default=16,
+        title="预处理worker(表示进程)数量",
+        description="预处理worker(表示进程)数量",
+        gt=1,
+        lt=32
+    )
+    max_grad_norm: int = Field(
+        default=1,
+        title="最大梯度范数",
+        description="最大梯度范数(限制梯度过大)",
+        gt=1,
+        lt=8
+    )
+    logging_steps: int = Field(
+        default=5,
+        title="日志步长",
+        description="每训练logging_steps步记录一次日志",
+        gt=5,
+        lt=10
+    )
+    save_steps: int = Field(
+        default=100,
+        title="每训练save_steps步保存一次模型",
+        description="每训练save_steps步保存一次模型",
+        gt=50,
+        lt=200
+    )
+    warmup_step: int = Field(
+        default=0,
+        title="预热步数（Warmup Steps）",
+        description="预热步数（Warmup Steps）,学习率预热步数",
+        gt=0,
+        lt=100
+    )
+    optim: str = Field(
+        default='adamw_torch',
+        title="优化器",
+        description="要使用的优化器：adamw_torch、adamw_8bit 或 adafactor。",
+        max_length=100
+    )
+    resize_vocab: bool = Field(
+        default=False,
+        title="调整分词器词汇和嵌入层的大小",
+        description="调整分词器词汇和嵌入层的大小"
+    )
+    packing: bool = Field(
+        default=False,
+        title="将序列打包成固定长度的样本。",
+        description="将序列打包成固定长度的样本。"
+    )
+    upcast_layernorm: bool = Field(
+        default=False,
+        title="upcast_layernorm",
+        description="upcast_layernorm"
+    )
+    use_llama_pro: bool = Field(
+        default=False,
+        title="use_llama_pro",
+        description="use_llama_pro"
+    )
+    shift_attn: bool = Field(
+        default=False,
+        title="shift_attn",
+        description="shift_attn"
+    )
+    report_to: bool = Field(
+        default=False,
+        title="report_to",
+        description="report_to"
+    )
+    use_galore: bool = Field(
+        default=False,
+        title="use_galore",
+        description="use_galore"
+    )
+    use_badam: bool = Field(
+        default=False,
+        title="use_badam",
+        description="use_badam"
+    )
+    compute_type: Literal["fp16", "bf16", 'pure_bf16'] = Field(
+        default='bf16',
+        title="compute_type",
+        description="compute_type",
+        max_length=100
+    )
+    plot_loss: bool = Field(
+        default=True,
+        title="plot_loss",
+        description="plot_loss"
+    )
+    template: Literal["llama3", "qwen"] = Field(
+        default='llama3',
+        title="template",
+        description="template",
+        max_length=100
+    )
+    ds_stage: str | None = Field(
+        default=None,
+        title="ds_stage",
+        description="ds_stage",
+    )
+    lora_rank: int = Field(default=8, title="lora_rank", description="lora_rank")
+    lora_alpha: int = Field(default=16, title="lora_alpha", description="lora_alpha")
+    lora_dropout: int = Field(default=0, title="lora_dropout", description="lora_dropout")
+    loraplus_lr_ratio: int = Field(default=0, title="loraplus_lr_ratio", description="loraplus_lr_ratio")
+    create_new_adapter: bool = Field(default=False, title="create_new_adapter", description="create_new_adapter")
+    use_rslora: bool = Field(default=False, title="use_rslora", description="use_rslora")
+    use_dora: bool = Field(default=True, title="use_dora", description="use_dora")
+    use_pissa: int = Field(default=False, title="use_pissa", description="use_pissa")
+    lora_target: str = Field(default='', title="lora_target", description="lora_target")
+    additional_target: str | None = Field(default='', title="additional_target", description="additional_target")
+
     model_config = ConfigDict(
         json_schema_extra={
             'example': {
                 'stage': 'sft',
                 'do_train': True,
-                'model_name_or_path': './models/Llama3-8B-Chinese-Chat',
+                'model_path': './models/Llama3-8B-Chinese-Chat',
+                'model_name': 'LLaMA3-8B-Chinese-Chat',
                 'finetuning_type': 'lora',
-                'dataset': 'identity',
+                'dataset': ['identity', ],
                 'learning_rate': 1e-05,
                 'num_train_epochs': 3,
                 'max_samples': 1000,
-                'output_dir': '',
+                'output_dir': 'output_dir_demo',
+                'lang': 'zh'
             }
         },
         protected_namespaces=()

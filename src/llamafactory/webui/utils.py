@@ -7,6 +7,7 @@ from typing import Any, Dict, List, Optional, Tuple
 import psutil
 from transformers.trainer_utils import get_last_checkpoint
 from yaml import safe_dump, safe_load
+from loguru import logger
 
 from ..extras.constants import PEFT_METHODS, RUNNING_LOG, TRAINER_LOG, TRAINING_ARGS, TRAINING_STAGES
 from ..extras.packages import is_gradio_available, is_matplotlib_available
@@ -18,6 +19,8 @@ from .locales import ALERTS
 if is_gradio_available():
     import gradio as gr
 
+
+MAX_RUNNING_LOG_LENG = 1024
 
 def abort_process(pid: int) -> None:
     r"""
@@ -144,6 +147,9 @@ def get_trainer_info_api(output_path: os.PathLike, do_train: bool) -> Tuple[str,
     if os.path.isfile(running_log_path):
         with open(running_log_path, "r", encoding="utf-8") as f:
             running_log = f.read()
+            ok_len = len(running_log)
+            if len(running_log) > MAX_RUNNING_LOG_LENG:
+                running_log = running_log[:-1 * MAX_RUNNING_LOG_LENG]
 
     trainer_log_path = os.path.join(output_path, TRAINER_LOG)
     if os.path.isfile(trainer_log_path):
@@ -167,9 +173,12 @@ def get_trainer_info_api(output_path: os.PathLike, do_train: bool) -> Tuple[str,
             }
             if do_train and is_matplotlib_available():
                 fig = gen_loss_plot(trainer_log)
-                running_loss = fig
-
+                figure_path = os.path.join(output_path, "training_loss.png")
+                fig.savefig(figure_path, format="png", dpi=100)
+                logger.info("Figure saved at: {}", figure_path)
+                running_loss = figure_path
     return running_log, running_progress, running_loss
+
 
 def get_trainer_info(output_path: os.PathLike, do_train: bool) -> Tuple[str, "gr.Slider", Optional["gr.Plot"]]:
     r"""

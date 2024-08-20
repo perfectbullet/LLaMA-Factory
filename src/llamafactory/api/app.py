@@ -37,7 +37,7 @@ from .protocol import (
 from .mongodb_tools import llmbase_collection, dataset_info_collection, db, init_mongodb
 
 from .schemas import LLMBaseModel, LLMBaseCollection, UpdateLLMBaseModel, DataSetInfo, DataSetInfoList, \
-    DataSetFormatList, DataSetFormat, FinetuningArgs, FinetuningArgsList
+    DataSetFormatList, DataSetFormat, FinetuningArgs, FinetuningArgsList, FinetuningLog
 from ..extras.constants import API_SUPPORTED_MODELS
 from ..extras.misc import torch_gc
 from ..extras.packages import is_fastapi_available, is_starlette_available, is_uvicorn_available
@@ -249,9 +249,9 @@ def create_app(engine: ApiEngine) -> FastAPI:
             raise HTTPException(status_code=status.HTTP_405_METHOD_NOT_ALLOWED, detail="Not allowed")
 
         if request.stream:
-            generate = create_stream_chat_completion_response(request, chat_model)
+            request_generator = create_stream_chat_completion_response(request, chat_model)
             # return EventSourceResponse(['ok{}'.format(i) for i in range(20)], media_type="text/event-stream")
-            return EventSourceResponse(generate, media_type="text/event-stream")
+            return EventSourceResponse(request_generator, media_type="text/event-stream")
         else:
             return await create_chat_completion_response(request, chat_model)
 
@@ -505,16 +505,16 @@ def create_app(engine: ApiEngine) -> FastAPI:
     @app.post(
         '/v1/finetuning/run_finetuning',
         response_description='微调状态返回',
-        response_model=FinetuningArgs,
+        response_model=FinetuningLog,
         status_code=status.HTTP_201_CREATED,
         summary='模型微调接口',
     )
     async def run_finetuning(fine_tuning_args: FinetuningArgs):
         # logger.info('fine_tuning_args %s', fine_tuning_args)
         fargs = fine_tuning_args.model_dump(exclude={'id', })
-        logger.info('fargs %s', fargs)
+        logger.info('fargs {}', fargs)
         collection = db.get_collection("fine_tuning_args")
-        api_runner.run_train(fargs)
+
         try:
             new_fargs = await collection.insert_one(fargs)
         except DuplicateKeyError as e:
@@ -524,7 +524,12 @@ def create_app(engine: ApiEngine) -> FastAPI:
         created_fargs = await collection.find_one(
             {"_id": new_fargs.inserted_id}
         )
-        return created_fargs
+        request_generator = api_runner.run_train(created_fargs)
+        # for elm in request_generator:
+        #     print('elm is {}'.format(elm))
+        # return EventSourceResponse(['ok{}'.format(i) for i in range(20)], media_type="text/event-stream")
+        return EventSourceResponse(request_generator, media_type="text/event-stream")
+        # return created_fargs
 
     @app.get(
         '/v1/finetuning/get_finetuning_args',
@@ -578,7 +583,7 @@ def create_app(engine: ApiEngine) -> FastAPI:
 
 
 def run_api() -> None:
-    logger.info("********\n os.getcwd {}\n\n********".format(os.getcwd()))
+    logger.info("********###\n os.getcwd {}\n###********", os.getcwd())
     engine = ApiEngine()
     app = create_app(engine)
     api_host = os.environ.get("API_HOST", "0.0.0.0")

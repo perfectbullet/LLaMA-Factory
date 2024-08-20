@@ -1,3 +1,4 @@
+import json
 import os
 from copy import deepcopy
 from subprocess import Popen, TimeoutExpired
@@ -5,6 +6,7 @@ from typing import TYPE_CHECKING, Any, Dict, Generator, Optional
 
 from transformers.trainer import TRAINING_ARGS_NAME
 
+from .common import jsonify
 from ..extras.constants import LLAMABOARD_CONFIG, PEFT_METHODS, TRAINING_STAGES
 from ..extras.misc import is_gpu_or_npu_available, torch_gc
 
@@ -87,7 +89,7 @@ class ApiRunner:
             do_train=True,
             model_name_or_path=data.get("model_path"),
             cache_dir=user_config.get("cache_dir", None),
-            preprocessing_num_workers=16,
+            preprocessing_num_workers=data.get("preprocessing_num_workers"),
             finetuning_type=finetuning_type,
             quantization_bit=quantization_bit,
             quantization_method=data.get("quantization_method"),
@@ -109,7 +111,7 @@ class ApiRunner:
             logging_steps=data.get("logging_steps"),
             save_steps=data.get("save_steps"),
             warmup_steps=data.get("warmup_steps"),
-            neftune_noise_alpha=data.get("neftune_alpha") or None,
+            neftune_noise_alpha=data.get("neftune_alpha", None),
             optim=data.get("optim"),
             resize_vocab=data.get("resize_vocab"),
             packing=data.get("packing"),
@@ -131,9 +133,7 @@ class ApiRunner:
         # checkpoints
         if data.get("checkpoint_path"):
             if finetuning_type in PEFT_METHODS:  # list
-                args["adapter_name_or_path"] = ",".join(
-                    [get_save_dir(model_name, finetuning_type, adapter) for adapter in data.get("checkpoint_path")]
-                )
+                args["adapter_name_or_path"] = data.get("checkpoint_path")
             else:  # str
                 args["model_name_or_path"] = get_save_dir(model_name, finetuning_type, data.get("checkpoint_path"))
 
@@ -145,17 +145,17 @@ class ApiRunner:
 
         # lora config
         if args["finetuning_type"] == "lora":
-            args["lora_rank"] = data.get("train.lora_rank")
-            args["lora_alpha"] = data.get("train.lora_alpha")
-            args["lora_dropout"] = data.get("train.lora_dropout")
-            args["loraplus_lr_ratio"] = data.get("train.loraplus_lr_ratio") or None
-            args["create_new_adapter"] = data.get("train.create_new_adapter")
-            args["use_rslora"] = data.get("train.use_rslora")
-            args["use_dora"] = data.get("train.use_dora")
-            args["pissa_init"] = data.get("train.use_pissa")
-            args["pissa_convert"] = data.get("train.use_pissa")
-            args["lora_target"] = data.get("train.lora_target") or "all"
-            args["additional_target"] = data.get("train.additional_target") or None
+            args["lora_rank"] = data.get("lora_rank")
+            args["lora_alpha"] = data.get("lora_alpha")
+            args["lora_dropout"] = data.get("lora_dropout")
+            args["loraplus_lr_ratio"] = data.get("loraplus_lr_ratio") or None
+            args["create_new_adapter"] = data.get("create_new_adapter")
+            args["use_rslora"] = data.get("use_rslora")
+            args["use_dora"] = data.get("use_dora")
+            args["pissa_init"] = data.get("use_pissa")
+            args["pissa_convert"] = data.get("use_pissa")
+            args["lora_target"] = data.get("lora_target") or "all"
+            args["additional_target"] = data.get("additional_target") or None
 
             if args["use_llama_pro"]:
                 args["num_layer_trainable"] = data.get("train.num_layer_trainable")
@@ -188,21 +188,21 @@ class ApiRunner:
 
         # badam config
         if args["use_badam"]:
-            args["badam_mode"] = data.get("train.badam_mode")
-            args["badam_switch_mode"] = data.get("train.badam_switch_mode")
-            args["badam_switch_interval"] = data.get("train.badam_switch_interval")
-            args["badam_update_ratio"] = data.get("train.badam_update_ratio")
+            args["badam_mode"] = data.get("badam_mode")
+            args["badam_switch_mode"] = data.get("badam_switch_mode")
+            args["badam_switch_interval"] = data.get("badam_switch_interval")
+            args["badam_update_ratio"] = data.get("badam_update_ratio")
 
         # eval config
-        if data.get("train.val_size") > 1e-6 and args["stage"] != "ppo":
-            args["val_size"] = data.get("train.val_size")
+        if data.get("val_size") > 1e-6 and args["stage"] != "ppo":
+            args["val_size"] = data.get("val_size")
             args["eval_strategy"] = "steps"
             args["eval_steps"] = args["save_steps"]
             args["per_device_eval_batch_size"] = args["per_device_train_batch_size"]
 
         # ds config
-        if data.get("train.ds_stage") != "none":
-            ds_stage = data.get("train.ds_stage")
+        if data.get("ds_stage"):
+            ds_stage = data.get("ds_stage")
             ds_offload = "offload_" if data.get("train.ds_offload") else ""
             args["deepspeed"] = os.path.join(DEFAULT_CACHE_DIR, "ds_z{}_{}config.json".format(ds_stage, ds_offload))
 
@@ -267,18 +267,21 @@ class ApiRunner:
             args = self._parse_train_args(data) if do_train else self._parse_eval_args(data)
             yield {output_box: gen_cmd(args)}
 
-    def _launch(self, data: Dict["Component", Any], do_train: bool) -> Generator[Dict["Component", Any], None, None]:
-        output_box = self.manager.get_elem_by_id("{}.output_box".format("train" if do_train else "eval"))
+    def _launch(self, data: Dict[str, Any], do_train: bool) -> Generator[Dict[str, Any], None, None]:
+
         error = self._initialize(data, do_train, from_preview=False)
         if error:
-            yield {output_box: error}
+            yield {'output_box': error}
         else:
             #
             self.do_train, self.running_data = do_train, data
             args = self._parse_train_args(data) if do_train else self._parse_eval_args(data)
 
             os.makedirs(args["output_dir"], exist_ok=True)
-            save_args(os.path.join(args["output_dir"], LLAMABOARD_CONFIG), self._form_config_dict(data))
+            save_args(
+                os.path.join(args["output_dir"], LLAMABOARD_CONFIG),
+                self._form_config_dict(data)
+            )
 
             env = deepcopy(os.environ)
             env["LLAMABOARD_ENABLED"] = "1"
@@ -286,17 +289,17 @@ class ApiRunner:
             if args.get("deepspeed", None) is not None:
                 env["FORCE_TORCHRUN"] = "1"
             train_cmd = "llamafactory-cli train {}".format(save_cmd(args))
+
             self.trainer = Popen(train_cmd, env=env, shell=True)
             yield from self.monitor()
 
     def _form_config_dict(self, data: Dict[str, Any]) -> Dict[str, Any]:
         config_dict = {}
-        skip_ids = ["lang", "model_path", "output_dir", "config_path"]
+        skip_ids = ["lang", "model_path", "output_dir", "config_path", "_id"]
         for elem, value in data.items():
-            elem_id = self.running_data.get(elem)
-            if elem_id not in skip_ids:
-                config_dict[elem_id] = value
-
+            self.running_data[elem] = value
+            if elem not in skip_ids:
+                config_dict[elem] = value
         return config_dict
 
     def preview_train(self, data):
@@ -315,7 +318,8 @@ class ApiRunner:
     def monitor(self):
         self.aborted = False
         self.running = True
-        lang, model_name, finetuning_type = self.running_data.get("lang"), self.running_data.get("model_name"), self.running_data.get("finetuning_type")
+        lang, model_name, finetuning_type = self.running_data.get("lang"), self.running_data.get(
+            "model_name"), self.running_data.get("finetuning_type")
         output_dir = self.running_data.get("output_dir")
         output_path = get_save_dir(model_name, finetuning_type, output_dir)
         # 没有gradio如何使用呢？
@@ -324,10 +328,14 @@ class ApiRunner:
         # loss_viewer = self.manager.get_elem_by_id("train.loss_viewer") if self.do_train else None
         while self.trainer is not None:
             if self.aborted:
-                yield {
+                return_dict = {
                     'output_box': ALERTS["info_aborting"][lang],
                     'progress_bar': '',
                 }
+                yield json.dumps(
+                    return_dict,
+                    ensure_ascii=False
+                )
             else:
                 running_log, running_progress, running_loss = get_trainer_info_api(output_path, self.do_train)
                 return_dict = {
@@ -336,7 +344,10 @@ class ApiRunner:
                 }
                 if running_loss is not None:
                     return_dict['running_loss'] = running_loss
-                yield return_dict
+                yield json.dumps(
+                    return_dict,
+                    ensure_ascii=False
+                )
             try:
                 self.trainer.wait(2)
                 self.trainer = None
@@ -359,7 +370,10 @@ class ApiRunner:
             'output_box': self._finalize(lang, finish_info),
             'progress_bar': '',
         }
-        yield return_dict
+        yield json.dumps(
+            return_dict,
+            ensure_ascii=False
+        )
 
     def save_args(self, data):
         output_box = self.running_data.get("output_box")
