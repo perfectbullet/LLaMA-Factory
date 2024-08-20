@@ -529,13 +529,13 @@ def create_app(engine: ApiEngine) -> FastAPI:
         '/v1/finetuning/abort_finetuning',
         response_description='中断微调训练',
         status_code=status.HTTP_202_ACCEPTED,
+        response_model=FinetuningArgs,
         summary='中断微调训练',
     )
     async def abort_finetuning():
         """
         中断微调训练
         """
-        # 找到一个微调的，
         collection = db.get_collection("fine_tuning_args")
         if (
             finetuning_args := await collection.find_one()
