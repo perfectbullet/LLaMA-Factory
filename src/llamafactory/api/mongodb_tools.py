@@ -6,7 +6,7 @@ import motor.motor_asyncio
 from motor.motor_asyncio import AsyncIOMotorCollection, AsyncIOMotorDatabase
 from loguru import logger
 
-
+os.environ.setdefault("MONGODB_URL", 'mongodb://admin:admin@localhost/admin?retryWrites=true')
 MONGODB_URL = os.environ["MONGODB_URL"]
 logger.info('MONGODB_URL IS {}'.format(MONGODB_URL))
 

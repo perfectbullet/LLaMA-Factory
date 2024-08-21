@@ -606,6 +606,7 @@ def run_api() -> None:
     app = create_app(engine)
     api_host = os.environ.get("API_HOST", "0.0.0.0")
     api_port = os.environ.get("API_PORT", 8010)
+
     logger.info("Visit  http://localhost:{}/docs for API document."
                 "\nVisit  http://localhost:{}/redoc for API document.".format(api_port, api_port))
     uvicorn.run(app, host=api_host, port=api_port)

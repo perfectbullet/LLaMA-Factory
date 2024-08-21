@@ -2,7 +2,7 @@ import json
 import os
 from copy import deepcopy
 from subprocess import Popen, TimeoutExpired
-from typing import Any, Dict, Generator, Optional
+from typing import Any, Dict, Generator, Optional, AsyncGenerator
 
 from transformers.trainer import TRAINING_ARGS_NAME
 
@@ -19,7 +19,7 @@ class ApiRunner:
         """ Resume """
         self.trainer: Optional[Popen] = None
         self.do_train = True
-        self.running_data: Dict[str, Any] = None
+        self.running_data: Dict[str, Any] = dict()
         """ State """
         self.aborted = False
         self.running = False
@@ -264,8 +264,16 @@ class ApiRunner:
             args = self._parse_train_args(data) if do_train else self._parse_eval_args(data)
             yield {output_box: gen_cmd(args)}
 
-    def _launch(self, data: Dict[str, Any], do_train: bool) -> Generator[str]:
-
+    def _launch(self, data: Dict[str, Any], do_train: bool) -> Generator[str, None, None]:
+        """
+        生成器可以通过泛型类型 Generator[YieldType, SendType, ReturnType] 进行注释
+        例如：
+            def echo_round() -> Generator[int, float, str]:
+                sent = yield 0
+                while sent >= 0:
+                    sent = yield round(sent)
+                return 'Done'
+        """
         error = self._initialize(data, do_train, from_preview=False)
         if error:
             yield json.dumps(

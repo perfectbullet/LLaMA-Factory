@@ -60,7 +60,7 @@ class Command(str, Enum):
 
 
 def main():
-    print('sys.argv {}'.format(sys.argv))
+    print('llamafactory-cli sys.argv {}'.format(sys.argv))
     command = sys.argv.pop(1) if len(sys.argv) != 1 else Command.HELP
     if command == Command.API:
         print('sys.argv {}'.format(sys.argv))
