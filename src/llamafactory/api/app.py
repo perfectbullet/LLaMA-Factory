@@ -1,7 +1,7 @@
 import os
 import uuid
 from contextlib import asynccontextmanager
-from typing import Optional
+from typing import Optional, Dict
 
 from bson import ObjectId
 from loguru import logger
@@ -596,6 +596,18 @@ def create_app(engine: ApiEngine) -> FastAPI:
         if delete_result.deleted_count == 1:
             return Response(status_code=status.HTTP_204_NO_CONTENT)
         raise HTTPException(status_code=404, detail=f"finetuning_args {args_id} 没有找到这个")
+
+    @app.get(
+        '/v1/device/get_device_usage_info',
+        response_description='设备使用情况',
+        summary='获取设备使用情况'
+    )
+    async def get_device_usage_info():
+        """
+        获取设备使用情况
+        """
+        from gpu_monitor import get_gpu_and_cpu_info
+        return get_gpu_and_cpu_info()
 
     return app
 
