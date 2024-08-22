@@ -97,4 +97,3 @@ def get_gpu_and_cpu_info():
 
 if __name__ == '__main__':
     get_gpu_and_cpu_info()
-
