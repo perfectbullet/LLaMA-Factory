@@ -8,6 +8,7 @@ export CUDA_VISIBLE_DEVICES=1
 nohup jupyter lab --ip=0.0.0.0 --port=8889 --no-browser --allow-root > log-jupyterlab.log 2>&1 &
 
 export MONGODB_URL=mongodb://admin:123456@10.0.1.40/?authSource=admin
+export PYTHONPATH=$PYTHONPATH:.
 nohup python src/api.py > api-log.log 2>&1 &
 
 
