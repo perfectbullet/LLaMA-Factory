@@ -1,32 +1,16 @@
-# Copyright 2024 the LlamaFactory team.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
 from typing import TYPE_CHECKING, Dict
 
 from transformers.trainer_utils import SchedulerType
 
+from .data import create_preview_box, create_data_import_box
+from ..common import DEFAULT_DATA_DIR, list_checkpoints, list_datasets
+from ..utils import change_stage, list_config_paths, list_output_dirs
 from ...extras.constants import TRAINING_STAGES
 from ...extras.misc import get_device_count
 from ...extras.packages import is_gradio_available
-from ..common import DEFAULT_DATA_DIR, list_checkpoints, list_datasets
-from ..utils import change_stage, list_config_paths, list_output_dirs
-from .data import create_preview_box
-
 
 if is_gradio_available():
     import gradio as gr
-
 
 if TYPE_CHECKING:
     from gradio.components import Component
@@ -45,7 +29,8 @@ def create_train_tab(engine: "Engine") -> Dict[str, "Component"]:
         dataset_dir = gr.Textbox(value=DEFAULT_DATA_DIR, scale=1)
         dataset = gr.Dropdown(multiselect=True, allow_custom_value=True, scale=4)
         preview_elems = create_preview_box(dataset_dir, dataset)
-
+        data_import_elems = create_data_import_box(dataset_dir, dataset)
+        preview_elems.update(data_import_elems)
     input_elems.update({training_stage, dataset_dir, dataset})
     elem_dict.update(dict(training_stage=training_stage, dataset_dir=dataset_dir, dataset=dataset, **preview_elems))
 

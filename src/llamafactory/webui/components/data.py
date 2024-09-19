@@ -1,32 +1,18 @@
-# Copyright 2024 the LlamaFactory team.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
 import json
 import os
 from typing import TYPE_CHECKING, Any, Dict, List, Tuple
 
+from loguru import logger
+
+from ...data.parse_file import read_excel, read_json, save2json
 from ...extras.constants import DATA_CONFIG
 from ...extras.packages import is_gradio_available
-
 
 if is_gradio_available():
     import gradio as gr
 
-
 if TYPE_CHECKING:
     from gradio.components import Component
-
 
 PAGE_SIZE = 2
 
@@ -78,7 +64,7 @@ def get_preview(dataset_dir: str, dataset: list, page_index: int) -> Tuple[int, 
         for file_name in os.listdir(data_path):
             data.extend(_load_data_file(os.path.join(data_path, file_name)))
 
-    return len(data), data[PAGE_SIZE * page_index : PAGE_SIZE * (page_index + 1)], gr.Column(visible=True)
+    return len(data), data[PAGE_SIZE * page_index: PAGE_SIZE * (page_index + 1)], gr.Column(visible=True)
 
 
 def create_preview_box(dataset_dir: "gr.Textbox", dataset: "gr.Dropdown") -> Dict[str, "Component"]:
@@ -117,4 +103,56 @@ def create_preview_box(dataset_dir: "gr.Textbox", dataset: "gr.Dropdown") -> Dic
         next_btn=next_btn,
         close_btn=close_btn,
         preview_samples=preview_samples,
+    )
+
+
+def import_data(dataset_dir: str, dataset: list, inputs: gr.components.File):
+    xlsx_path = '{}'.format(inputs)
+    fname = os.path.basename(xlsx_path)
+    if not fname.endswith('.xlsx'):
+        gr.Warning('当前必须使用 xlsx格式文件')
+        return
+    new_json_path = os.path.join(dataset_dir, fname.replace('.xlsx', '.json'))
+    if os.path.exists(new_json_path):
+        print('{} is existed'.format(new_json_path))
+        gr.Warning('文件已存在: {}'.format(new_json_path))
+        return
+    new_json_path = read_excel(new_json_path, xlsx_path)
+    gr.Info('json {}'.format(new_json_path))
+
+    data_info_name = 'dataset_info.json'
+    data_info_path = os.path.join(dataset_dir, data_info_name)
+    data_info_json = read_json(data_info_path)
+    logger.info('data_info_json is {}', len(data_info_json))
+
+    base_name = fname.replace('.xlsx', '')
+    c4_name = "c4_{}".format(base_name)
+    c4_format = {
+        "file_name": os.path.basename(new_json_path),
+        "columns": {
+          "prompt": "text"
+        }
+    }
+    # update data_info and save
+    data_info_json[c4_name] = c4_format
+    data_info_path = save2json(data_info_json, data_info_path)
+    logger.info('data_info_path is {}', data_info_path)
+
+
+def create_data_import_box(dataset_dir: "gr.Textbox", dataset: "gr.Dropdown") -> Dict[str, "Component"]:
+    """
+    data import box
+    """
+    data_import_btn = gr.Button('导入数据', interactive=True, scale=1, )
+    with gr.Column(visible=False, elem_classes="modal-box") as import_data_box:
+        inputs = gr.components.File(label="上传excel文件")
+        submit_btn = gr.Button('确定')
+        submit_btn.click(import_data, [dataset_dir, dataset, inputs])
+        data_import_close_btn = gr.Button('关闭')
+
+    data_import_btn.click(lambda: gr.Column(visible=True), outputs=[import_data_box], queue=False)
+    data_import_close_btn.click(lambda: gr.Column(visible=False), outputs=[import_data_box], queue=False)
+    return dict(
+        data_import_btn=data_import_btn,
+        data_import_close_btn=data_import_close_btn
     )

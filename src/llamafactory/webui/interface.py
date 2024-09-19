@@ -1,6 +1,5 @@
 import os
 
-from ..extras.packages import is_gradio_available
 from .common import save_config
 from .components import (
     create_chat_box,
@@ -12,7 +11,7 @@ from .components import (
 )
 from .css import CSS
 from .engine import Engine
-
+from ..extras.packages import is_gradio_available
 
 if is_gradio_available():
     import gradio as gr
@@ -49,8 +48,6 @@ def create_ui(demo_mode: bool = False) -> gr.Blocks:
         demo.load(engine.resume, outputs=engine.manager.get_elem_list(), concurrency_limit=None)
         lang.change(engine.change_lang, [lang], engine.manager.get_elem_list(), queue=False)
         lang.input(save_config, inputs=[lang], queue=False)
-
-    
     return demo
 
 
