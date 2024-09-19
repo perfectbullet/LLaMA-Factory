@@ -1,0 +1,34 @@
+{
+    "identity": {
+        "file_name": "identity.json",
+        "columns": {
+            "prompt": "instruction",
+            "query": "input",
+            "response": "output"
+        }
+    },
+    "wiki_demo": {
+        "file_name": "wiki_demo.txt",
+        "columns": {
+            "prompt": "text"
+        }
+    },
+    "c4_Medical-Devices-low": {
+        "file_name": "c4_Medical-Devices-low.json",
+        "columns": {
+            "prompt": "text"
+        }
+    },
+    "c4_医疗器械法规文件_详情_20240907_new": {
+        "file_name": "医疗器械法规文件_详情_20240907_new.json",
+        "columns": {
+            "prompt": "text"
+        }
+    },
+    "c4_医疗器械-政策法规": {
+        "file_name": "医疗器械-政策法规.json",
+        "columns": {
+            "prompt": "text"
+        }
+    }
+}
