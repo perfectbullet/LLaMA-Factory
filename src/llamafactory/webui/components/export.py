@@ -39,7 +39,7 @@ def save_model(
     export_device: str,
     export_legacy_format: bool,
     export_dir: str,
-    # export_hub_model_id: str,
+    export_hub_model_id: str,
 ) -> Generator[str, None, None]:
     error = ""
     if not model_name:
@@ -66,7 +66,7 @@ def save_model(
         template=template,
         visual_inputs=visual_inputs,
         export_dir=export_dir,
-        export_hub_model_id=None,
+        export_hub_model_id=export_hub_model_id or None,
         export_size=export_size,
         export_quantization_bit=int(export_quantization_bit) if export_quantization_bit in GPTQ_BITS else None,
         export_quantization_dataset=export_quantization_dataset,
@@ -97,13 +97,14 @@ def create_export_tab(engine: "Engine") -> Dict[str, "Component"]:
             choices=["cpu", "auto"],
             value="auto",
             label="导出设备",
-            info="导出模型使用的设备类型222"
+            info="导出模型使用的设备类型"
         )
         export_legacy_format = gr.Checkbox()
 
     with gr.Row():
         export_dir = gr.Textbox()
         # export_hub_model_id = gr.Textbox()
+        export_hub_model_id = None
 
     checkpoint_path: gr.Dropdown = engine.manager.get_elem_by_id("top.checkpoint_path")
     checkpoint_path.change(can_quantize, [checkpoint_path], [export_quantization_bit], queue=False)
@@ -127,7 +128,7 @@ def create_export_tab(engine: "Engine") -> Dict[str, "Component"]:
             export_device,
             export_legacy_format,
             export_dir,
-            # export_hub_model_id,
+            export_hub_model_id,
         ],
         [info_box],
     )
@@ -136,10 +137,10 @@ def create_export_tab(engine: "Engine") -> Dict[str, "Component"]:
         export_size=export_size,
         export_quantization_bit=export_quantization_bit,
         export_quantization_dataset=export_quantization_dataset,
-        # export_device=export_device,
+        export_device=export_device,
         export_legacy_format=export_legacy_format,
         export_dir=export_dir,
-        # export_hub_model_id=export_hub_model_id,
+        export_hub_model_id=export_hub_model_id,
         export_btn=export_btn,
         info_box=info_box,
     )
