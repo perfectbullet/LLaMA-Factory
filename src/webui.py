@@ -1,6 +1,11 @@
 import os
 import matplotlib
 
+os.environ["HTTP_PROXY"] = ''
+os.environ["HTTPS_PROXY"] = ''
+os.environ["all_proxy"] = ''
+os.environ["ALL_PROXY"] = ''
+
 from llamafactory.webui.interface import create_ui
 
 matplotlib.use('TkAgg')
