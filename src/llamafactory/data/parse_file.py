@@ -32,28 +32,43 @@ def read_excel(new_json_path, xlsx_path):
     """
     解析文档
     """
+
+    base_name = os.path.basename(xlsx_path).replace('.xlsx', '')
+    new_data = []
     df = pd.read_excel(xlsx_path)
     data2 = json.loads(df.to_json(orient='records'))
-    new_data = []
-    for row in data2:
-        content = row['内容']
-        if content is None or not content:
-            continue
-        content = re.sub(r'.*docx', '', content)
-        content = re.sub(r'.*doc', '', content)
-        content = re.sub(r'\n+', '\n', content)
-        content = re.sub(r'　+\n', '\n', content)
-        content = re.sub(r'\n+', '\n', content)
-        # 结尾换行处理
-        content = re.sub(r'$\n', '', content)
-        if len(content) < 99:
+    if '内容' in data2[0]:
+        dataset_name = "c4_{}".format(base_name)
+        for row in data2:
+            content = row['内容']
+            if content is None or not content:
+                continue
+            content = re.sub(r'.*docx', '', content)
+            content = re.sub(r'.*doc', '', content)
+            content = re.sub(r'\n+', '\n', content)
+            content = re.sub(r'　+\n', '\n', content)
+            content = re.sub(r'\n+', '\n', content)
+            # 结尾换行处理
+            content = re.sub(r'$\n', '', content)
+            if len(content) < 99:
             # 不要小于 99 字的文本
-            continue
-        new_data.append({
+                continue
+            new_data.append({
             'text': content
-        })
+            })
+    else:
+        dataset_name = "alpaca_{}".format(base_name)
+        for row in data2:
+            instruction = row['instruction']
+            input = row['input']
+            output = row['output']
+            new_data.append({
+                'instruction': instruction,
+                'input': input,
+                'output': output,
+            })
     new_json_path = save2json(new_data, new_json_path)
-    return new_json_path
+    return new_json_path, dataset_name
 
 
 if __name__ == '__main__':

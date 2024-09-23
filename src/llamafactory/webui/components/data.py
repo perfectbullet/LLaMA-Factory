@@ -117,7 +117,7 @@ def import_data(dataset_dir: str, dataset: list, inputs: gr.components.File):
         print('{} is existed'.format(new_json_path))
         gr.Warning('文件已存在: {}'.format(new_json_path))
         return
-    new_json_path = read_excel(new_json_path, xlsx_path)
+    new_json_path, dataset_name = read_excel(new_json_path, xlsx_path)
     gr.Info('json {}'.format(new_json_path))
 
     data_info_name = 'dataset_info.json'
@@ -125,16 +125,21 @@ def import_data(dataset_dir: str, dataset: list, inputs: gr.components.File):
     data_info_json = read_json(data_info_path)
     logger.info('data_info_json is {}', len(data_info_json))
 
-    base_name = fname.replace('.xlsx', '')
-    c4_name = "c4_{}".format(base_name)
-    c4_format = {
-        "file_name": os.path.basename(new_json_path),
-        "columns": {
-          "prompt": "text"
+    if dataset_name.startswith('c4'):
+        c4_format = {
+            "file_name": os.path.basename(new_json_path),
+            "columns": {
+              "prompt": "text"
+            }
         }
-    }
-    # update data_info and save
-    data_info_json[c4_name] = c4_format
+        # update data_info and save
+        data_info_json[dataset_name] = c4_format
+    else:
+        alpaca_format = {
+            "file_name": os.path.basename(new_json_path)
+        }
+        # update data_info and save
+        data_info_json[dataset_name] = alpaca_format
     data_info_path = save2json(data_info_json, data_info_path)
     logger.info('data_info_path is {}', data_info_path)
 
