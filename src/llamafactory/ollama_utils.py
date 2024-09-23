@@ -54,7 +54,10 @@ def convert_gguf(export_dir):
     gguf file save in export_dir
     '''
     current_python: str = sys.executable
-    convert_cmd = '{} ./convert_hf_to_gguf/convert_hf_to_gguf.py {}'.format(current_python, export_dir)
+    if getpass.getuser() == 'zj':
+        convert_cmd = '{} ./convert_hf_to_gguf/convert_hf_to_gguf.py {}'.format(current_python, export_dir)
+    else:
+        convert_cmd = '/home/ubuntu/miniconda3/envs/llama_cpp/bin/python ./convert_hf_to_gguf/convert_hf_to_gguf.py {}'.format(export_dir)
     print('convert_cmd is {}'.format(convert_cmd))
     with subprocess.Popen(
             convert_cmd,
