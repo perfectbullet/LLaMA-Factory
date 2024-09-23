@@ -72,7 +72,7 @@ def convert_gguf(export_dir):
         # result_msg = proc.stderr.read().decode()
         # print('convert to gguf finished')
         # print('proc execute stderr is {}'.format(result_msg))
-        gr.Info('模型转化完成: {}')
+        gr.Info('模型转化完成!!')
 
 
 def create_ollama_model(export_dir: str):
