@@ -37,7 +37,7 @@ def read_excel(new_json_path, xlsx_path):
     new_data = []
     df = pd.read_excel(xlsx_path)
     data2 = json.loads(df.to_json(orient='records'))
-    if '内容' in data2[0]:
+    if 'text' in data2[0]:
         dataset_name = "c4_{}".format(base_name)
         for row in data2:
             content = row['内容']
@@ -56,7 +56,7 @@ def read_excel(new_json_path, xlsx_path):
             new_data.append({
             'text': content
             })
-    else:
+    elif 'instruction' in data2[0] and 'output' in data2[0]:
         dataset_name = "alpaca_{}".format(base_name)
         for row in data2:
             instruction = row['instruction']
@@ -67,6 +67,8 @@ def read_excel(new_json_path, xlsx_path):
                 'input': input,
                 'output': output,
             })
+    else:
+        dataset_name = ''
     new_json_path = save2json(new_data, new_json_path)
     return new_json_path, dataset_name
 

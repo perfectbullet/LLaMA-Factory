@@ -118,6 +118,9 @@ def import_data(dataset_dir: str, dataset: list, inputs: gr.components.File):
         gr.Warning('文件已存在: {}'.format(new_json_path))
         return
     new_json_path, dataset_name = read_excel(new_json_path, xlsx_path)
+    if dataset_name == '':
+        gr.Warning('数据格式错误')
+        return
     gr.Info('json {}'.format(new_json_path))
 
     data_info_name = 'dataset_info.json'
