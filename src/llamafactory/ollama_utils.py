@@ -139,4 +139,4 @@ if __name__ == '__main__':
     print('cwd is {}'.format(os.getcwd()))
     get_ollama_model_list_by_api()
     # convert_gguf('./models/v3')
-    create_ollama_model('./models/v3')
+    # create_ollama_model('./models/v3')
