@@ -33,17 +33,17 @@ def create_ui(demo_mode: bool = False) -> gr.Blocks:
                 engine.manager.add_elems("top", create_top())
                 lang: "gr.Dropdown" = engine.manager.get_elem_by_id("top.lang")
         
-                with gr.Tab("Train"):
+                with gr.Tab("训练"):
                     engine.manager.add_elems("train", create_train_tab(engine))
         
-                with gr.Tab("Evaluate & Predict"):
+                with gr.Tab("评估"):
                     engine.manager.add_elems("eval", create_eval_tab(engine))
         
-                with gr.Tab("Chat"):
+                with gr.Tab("对话"):
                     engine.manager.add_elems("infer", create_infer_tab(engine))
         
                 if not demo_mode:
-                    with gr.Tab("Export"):
+                    with gr.Tab("导出发布"):
                         engine.manager.add_elems("export", create_export_tab(engine))
         
                 demo.load(engine.resume, outputs=engine.manager.get_elem_list(), concurrency_limit=None)
