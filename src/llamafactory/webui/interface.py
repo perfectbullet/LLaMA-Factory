@@ -19,35 +19,45 @@ if is_gradio_available():
 
 def create_ui(demo_mode: bool = False) -> gr.Blocks:
     engine = Engine(demo_mode=demo_mode, pure_chat=False)
-
+    
+    
     with gr.Blocks(title="观想科技 LLaMA Board", css=CSS) as demo:
-        if demo_mode:
-            gr.HTML("<h1><center>LLaMA Board: A One-stop Web UI for Getting Started with LLaMA Factory</center></h1>")
-            gr.HTML(
-                '<h3><center>Visit <a href="https://github.com/hiyouga/LLaMA-Factory" target="_blank">'
-                "LLaMA Factory</a> for details.</center></h3>"
-            )
-            gr.DuplicateButton(value="Duplicate Space for private use", elem_classes="duplicate-button")
-
-        engine.manager.add_elems("top", create_top())
-        lang: "gr.Dropdown" = engine.manager.get_elem_by_id("top.lang")
-
-        with gr.Tab("Train"):
-            engine.manager.add_elems("train", create_train_tab(engine))
-
-        with gr.Tab("Evaluate & Predict"):
-            engine.manager.add_elems("eval", create_eval_tab(engine))
-
-        with gr.Tab("Chat"):
-            engine.manager.add_elems("infer", create_infer_tab(engine))
-
-        if not demo_mode:
-            with gr.Tab("Export"):
-                engine.manager.add_elems("export", create_export_tab(engine))
-
-        demo.load(engine.resume, outputs=engine.manager.get_elem_list(), concurrency_limit=None)
-        lang.change(engine.change_lang, [lang], engine.manager.get_elem_list(), queue=False)
-        lang.input(save_config, inputs=[lang], queue=False)
+        #gr.HTML("<h1><center>观想科技 LLaMA Board</center></h1>")
+        # gr.Image('./assets/head_01.png')
+        # gr.HTML("<img src='/file=./assets/head_01.png'>")
+        # image_path = "static/images/head_01.png"
+        gr.HTML(f"""<img src="/file=static/images/head_01.png">""")
+    
+        with gr.Row():
+            with gr.Column(scale=9):
+                engine.manager.add_elems("top", create_top())
+                lang: "gr.Dropdown" = engine.manager.get_elem_by_id("top.lang")
+        
+                with gr.Tab("Train"):
+                    engine.manager.add_elems("train", create_train_tab(engine))
+        
+                with gr.Tab("Evaluate & Predict"):
+                    engine.manager.add_elems("eval", create_eval_tab(engine))
+        
+                with gr.Tab("Chat"):
+                    engine.manager.add_elems("infer", create_infer_tab(engine))
+        
+                if not demo_mode:
+                    with gr.Tab("Export"):
+                        engine.manager.add_elems("export", create_export_tab(engine))
+        
+                demo.load(engine.resume, outputs=engine.manager.get_elem_list(), concurrency_limit=None)
+                lang.change(engine.change_lang, [lang], engine.manager.get_elem_list(), queue=False)
+                lang.input(save_config, inputs=[lang], queue=False)
+            with gr.Column(scale=1):
+                # gr.Image('./assets/help_04.png')
+                # gr.Image('./assets/help_05.png')
+                gr.HTML(f"""<img src="/file=static/images/help_05.png">""")
+                # gr.HTML("<h3><center>帮助中心</center></h3>")
+                # gr.HTML("<h4>教程</h4>")
+                # gr.HTML("<p>这里写教程内容1.模型选择2.数据集选择3。模型训练。。。。</p>")
+                btn = gr.Button("训练简介", link="/file=static/images/2024模型训练综合信息处理平台.pdf")
+                gr.Video("./assets/model_train.mp4")
     return demo
 
 
