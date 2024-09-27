@@ -95,6 +95,7 @@ def register_model_group(
     if vision:
         VISION_MODELS.add(prefix)
 
+
 # api.py 接口支持模型
 API_SUPPORTED_MODELS = {
     "LLaMA3-8B-Chat": {
@@ -230,19 +231,19 @@ API_SUPPORTED_MODELS = {
 }
 
 
-register_model_group(
-    models={
-        "Qwen-7B": {
-            DownloadSource.DEFAULT: "Qwen/Qwen-7B",
-            DownloadSource.MODELSCOPE: "qwen/Qwen-7B",
-        },
-        "Qwen-7B-Chat": {
-            DownloadSource.DEFAULT: "Qwen/Qwen-7B-Chat",
-            DownloadSource.MODELSCOPE: "qwen/Qwen-7B-Chat",
-        }
-    },
-    template="qwen"
-)
+# register_model_group(
+#     models={
+#         "Qwen-7B": {
+#             DownloadSource.DEFAULT: "Qwen/Qwen-7B",
+#             DownloadSource.MODELSCOPE: "qwen/Qwen-7B",
+#         },
+#         "Qwen-7B-Chat": {
+#             DownloadSource.DEFAULT: "Qwen/Qwen-7B-Chat",
+#             DownloadSource.MODELSCOPE: "qwen/Qwen-7B-Chat",
+#         }
+#     },
+#     template="qwen"
+# )
 
 
 register_model_group(
@@ -251,6 +252,7 @@ register_model_group(
             DownloadSource.DEFAULT: "Qwen/Qwen2-7B-Instruct",
             DownloadSource.MODELSCOPE: "qwen/Qwen2-7B-Instruct",
         },
+        "Qwen2-7B": {}
     },
     template="qwen"
 )
@@ -270,12 +272,24 @@ register_model_group(
             DownloadSource.DEFAULT: "shenzhi-wang/Llama3-8B-Chinese-Chat",
             DownloadSource.MODELSCOPE: "LLM-Research/Llama3-8B-Chinese-Chat",
         },
-       "LLaMA3-8B-Chinese-Chat-lora-sft": {
-            
-        },
-        "LLaMA3-8B-Chinese-5000B": {
-            
+        "Llama3-Chinese": {
+
         }
+       # "LLaMA3-8B-Chinese-Chat-lora-sft": {
+       #
+       #  },
+       #  "LLaMA3-8B-Chinese-5000B": {
+       #
+       #  }
     },
     template="llama3",
 )
+
+# LLaMA3-8B-Chinese-Chat
+# LLaMA3-8B
+# Qwen-7B
+# Qwen2-7B
+# Llama3-Chinese
+
+if __name__ == '__main__':
+    print(SUPPORTED_MODELS)

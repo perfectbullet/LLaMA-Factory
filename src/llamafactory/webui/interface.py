@@ -19,8 +19,6 @@ if is_gradio_available():
 
 def create_ui(demo_mode: bool = False) -> gr.Blocks:
     engine = Engine(demo_mode=demo_mode, pure_chat=False)
-    
-    
     with gr.Blocks(title="观想科技 LLaMA Board", css=CSS) as demo:
         #gr.HTML("<h1><center>观想科技 LLaMA Board</center></h1>")
         # gr.Image('./assets/head_01.png')
