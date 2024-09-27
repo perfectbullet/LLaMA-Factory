@@ -38,4 +38,6 @@ CSS = r"""
 .dark .modal-box {
   border: 2px solid white !important;
 }
+
+footer {display:none !important}
 """
