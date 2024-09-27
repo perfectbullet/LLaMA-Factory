@@ -88,6 +88,7 @@ def register_model_group(
         if prefix is None:
             prefix = name.split("-")[0]
         else:
+            print(prefix, name.split("-")[0])
             assert prefix == name.split("-")[0], "prefix should be identical."
         SUPPORTED_MODELS[name] = path
     if template is not None:
@@ -272,7 +273,7 @@ register_model_group(
             DownloadSource.DEFAULT: "shenzhi-wang/Llama3-8B-Chinese-Chat",
             DownloadSource.MODELSCOPE: "LLM-Research/Llama3-8B-Chinese-Chat",
         },
-        "Llama3-Chinese": {
+        "LLaMA3-Chinese": {
 
         }
        # "LLaMA3-8B-Chinese-Chat-lora-sft": {
