@@ -88,7 +88,6 @@ def register_model_group(
         if prefix is None:
             prefix = name.split("-")[0]
         else:
-            print(prefix, name.split("-")[0])
             assert prefix == name.split("-")[0], "prefix should be identical."
         SUPPORTED_MODELS[name] = path
     if template is not None:
@@ -286,11 +285,6 @@ register_model_group(
     template="llama3",
 )
 
-# LLaMA3-8B-Chinese-Chat
-# LLaMA3-8B
-# Qwen-7B
-# Qwen2-7B
-# Llama3-Chinese
 
 if __name__ == '__main__':
     print(SUPPORTED_MODELS)
