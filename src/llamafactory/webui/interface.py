@@ -24,7 +24,7 @@ def create_ui(demo_mode: bool = False) -> gr.Blocks:
         # gr.Image('./assets/head_01.png')
         # gr.HTML("<img src='/file=./assets/head_01.png'>")
         # image_path = "static/images/head_01.png"
-        gr.HTML(f"""<img src="/file=static/images/head_01.png">""")
+        gr.HTML("""<img src="/file=static/images/head_01.png">""")
     
         with gr.Row():
             with gr.Column(scale=9):

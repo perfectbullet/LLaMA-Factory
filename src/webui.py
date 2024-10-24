@@ -1,5 +1,5 @@
 import os
-import matplotlib
+# import matplotlib
 
 os.environ["HTTP_PROXY"] = ''
 os.environ["HTTPS_PROXY"] = ''
@@ -9,7 +9,8 @@ os.environ["ALL_PROXY"] = ''
 import gradio as gr
 from llamafactory.webui.interface import create_ui
 
-matplotlib.use('TkAgg')
+# error in docker container
+# matplotlib.use('TkAgg')
 
 
 def main():

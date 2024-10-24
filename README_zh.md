@@ -465,7 +465,7 @@ docker run -dit --gpus=all \
     -p 8000:8000 \
     --shm-size 16G \
     --name llamafactory \
-    llamafactory:latest
+    docker-cuda-llamafactory:latest
 
 docker exec -it llamafactory bash
 ```

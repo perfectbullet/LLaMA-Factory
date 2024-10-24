@@ -1,7 +1,7 @@
 services:
   llamafactory:
     build:
-      dockerfile: ./docker/docker-cuda/Dockerfile
+      dockerfile: ./docker/docker-cuda/Dockerfile-new
       context: ../..
       args:
         INSTALL_BNB: false
@@ -11,10 +11,10 @@ services:
         PIP_INDEX: https://pypi.tuna.tsinghua.edu.cn/simple
     container_name: llamafactory
     volumes:
-      - ../../hf_cache:/root/.cache/huggingface
-      - ../../ms_cache:/root/.cache/modelscope
-      - ../../data:/app/data
-      - ../../*:/app/
+#      - ../../hf_cache:/root/.cache/huggingface
+#      - ../../ms_cache:/root/.cache/modelscope
+#      - ../../data:/app/data
+      - ../../:/app/
       # - ../../src:/app/src
       # - ../../cache:/app/cache
       # - ../../config:/app/config
